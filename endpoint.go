@@ -38,13 +38,17 @@ func (e *RequestError) Error() string {
 //
 
 type Profile struct {
-	Name string
-	ID   UUID
+	Name   string
+	ID     UUID
+	Legacy bool
+	Demo   bool
 }
 
 type profileWithCustomUUID struct {
-	Name string
-	ID   uuid.UUID
+	Name   string
+	ID     uuid.UUID
+	Legacy bool
+	Demo   bool
 }
 
 var (
@@ -90,8 +94,10 @@ func (c *Client) ProfileByUsername(ctx context.Context, username string, timesta
 		}
 
 		return &Profile{
-			Name: parsed.Name,
-			ID:   UUID(parsed.ID),
+			Name:   parsed.Name,
+			ID:     UUID(parsed.ID),
+			Legacy: parsed.Legacy,
+			Demo:   parsed.Demo,
 		}, nil
 	default:
 		return nil, fmt.Errorf("%w: %s", StatusError, res.Status)
