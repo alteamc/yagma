@@ -64,12 +64,12 @@ type profileWithCustomUUID struct {
 var ProfileNotFound = errors.New("there is no user with such username")
 
 func (c *Client) ProfileByUsername(ctx context.Context, username string, timestamp time.Time) (*Profile, error) {
-	s := c.urlBase.mojangAPI + "/users/profiles/minecraft/" + url.QueryEscape(username)
+	reqURL := c.urlBase.mojangAPI + "/users/profiles/minecraft/" + url.QueryEscape(username)
 	if !timestamp.IsZero() {
-		s += "?at=" + strconv.FormatInt(timestamp.UnixMilli(), 10)
+		reqURL += "?at=" + strconv.FormatInt(timestamp.UnixMilli(), 10)
 	}
 
-	res, err := c.sendHTTPReq(ctx, http.MethodGet, s, nil, nil)
+	res, err := c.sendHTTPReq(ctx, http.MethodGet, reqURL, nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", HTTPError, err)
 	}
