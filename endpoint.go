@@ -95,7 +95,7 @@ func (c *Client) ProfileByUsername(ctx context.Context, username string, timesta
 
 		return &Profile{
 			Name:   parsed.Name,
-			ID:     UUID(parsed.ID),
+			ID:     uuid.UUID(parsed.ID),
 			Legacy: parsed.Legacy,
 			Demo:   parsed.Demo,
 		}, nil
