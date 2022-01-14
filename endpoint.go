@@ -1,6 +1,7 @@
 package yagma
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -101,6 +102,45 @@ func (c *Client) ProfileByUsername(ctx context.Context, username string, timesta
 			Legacy: parsed.Legacy,
 			Demo:   parsed.Demo,
 		}, nil
+	default:
+		return nil, fmt.Errorf("%w: %s", StatusError, res.Status)
+	}
+}
+
+// Profile by username (bulk)
+
+func (c *Client) ProfileByUsernameBulk(ctx context.Context, usernames []string) ([]*Profile, error) {
+	reqURL := c.urlBase.mojangAPI + "/profiles/minecraft"
+	bodyBytes, err := json.Marshal(usernames)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", HTTPError, err)
+	}
+
+	res, err := c.sendHTTPReq(ctx, http.MethodPost, reqURL, nil, bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", HTTPError, err)
+	}
+	defer func() { _ = res.Body.Close() }()
+
+	switch res.StatusCode {
+	case http.StatusBadRequest:
+		badReqErr, err := parseRequestError(res)
+		if err != nil {
+			return nil, err
+		}
+		return nil, badReqErr
+	case http.StatusOK:
+		data, err := io.ReadAll(res.Body)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %s", HTTPError, err)
+		}
+
+		profiles := make([]*Profile, 0, len(usernames))
+		if err := json.Unmarshal(data, &profiles); err != nil {
+			return nil, fmt.Errorf("%w: %s", JSONError, err)
+		}
+
+		return profiles, nil
 	default:
 		return nil, fmt.Errorf("%w: %s", StatusError, res.Status)
 	}
