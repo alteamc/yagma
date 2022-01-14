@@ -31,6 +31,20 @@ func (e *RequestError) Error() string {
 	return fmt.Sprintf("%s: %s", e.Type, e.Message)
 }
 
+func parseRequestError(res *http.Response) (*RequestError, error) {
+	data, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", HTTPError, err)
+	}
+
+	parsed := &RequestError{}
+	if err := json.Unmarshal(data, parsed); err != nil {
+		return nil, fmt.Errorf("%w: %s", JSONError, err)
+	}
+
+	return nil, parsed
+}
+
 // Profile by username
 
 type Profile struct {
@@ -65,17 +79,11 @@ func (c *Client) ProfileByUsername(ctx context.Context, username string, timesta
 	case http.StatusNoContent:
 		return nil, fmt.Errorf("%w: %s", ProfileNotFound, username)
 	case http.StatusBadRequest:
-		data, err := io.ReadAll(res.Body)
+		badReqErr, err := parseRequestError(res)
 		if err != nil {
-			return nil, fmt.Errorf("%w: %s", HTTPError, err)
+			return nil, err
 		}
-
-		parsed := &RequestError{}
-		if err := json.Unmarshal(data, parsed); err != nil {
-			return nil, fmt.Errorf("%w: %s", JSONError, err)
-		}
-
-		return nil, parsed
+		return nil, badReqErr
 	case http.StatusOK:
 		data, err := io.ReadAll(res.Body)
 		if err != nil {
