@@ -1,4 +1,4 @@
-package main
+package yagma
 
 const (
 	MojangAPI           = "https://api.mojang.com"
