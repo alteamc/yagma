@@ -14,9 +14,7 @@ import (
 	"github.com/google/uuid"
 )
 
-//
 // General errors
-//
 
 var (
 	HTTPError   = errors.New("failed to send HTTP request")
@@ -33,9 +31,7 @@ func (e *RequestError) Error() string {
 	return fmt.Sprintf("%s: %s", e.Type, e.Message)
 }
 
-//
 // Profile by username
-//
 
 type Profile struct {
 	Name   string
@@ -51,9 +47,7 @@ type profileWithCustomUUID struct {
 	Demo   bool
 }
 
-var (
-	ProfileNotFound = errors.New("there is no user with such username")
-)
+var ProfileNotFound = errors.New("there is no user with such username")
 
 func (c *Client) ProfileByUsername(ctx context.Context, username string, timestamp time.Time) (*Profile, error) {
 	s := c.urlBase.mojangAPI + "/users/profiles/minecraft/" + url.QueryEscape(username)
