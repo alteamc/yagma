@@ -39,14 +39,14 @@ func (e *RequestError) Error() string {
 
 type Profile struct {
 	Name   string
-	ID     UUID
+	ID     uuid.UUID
 	Legacy bool
 	Demo   bool
 }
 
 type profileWithCustomUUID struct {
 	Name   string
-	ID     uuid.UUID
+	ID     UUID
 	Legacy bool
 	Demo   bool
 }
