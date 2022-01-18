@@ -4,9 +4,7 @@ import (
 	"net/http"
 )
 
-//
 // Client
-//
 
 type Client struct {
 	httpClient *http.Client
@@ -28,9 +26,7 @@ func NewWithOptions(opts ...Option) *Client {
 	return c
 }
 
-//
 // Options
-//
 
 type optionFunc func(*Client)
 type Option struct{ configure optionFunc }
