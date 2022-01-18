@@ -77,14 +77,6 @@ func (c *Client) ProfileByUsername(ctx context.Context, username string, timesta
 	defer func() { _ = res.Body.Close() }()
 
 	switch res.StatusCode {
-	case http.StatusNoContent:
-		return nil, fmt.Errorf("%w: %s", ProfileNotFound, username)
-	case http.StatusBadRequest:
-		badReqErr, err := parseRequestError(res)
-		if err != nil {
-			return nil, err
-		}
-		return nil, badReqErr
 	case http.StatusOK:
 		data, err := io.ReadAll(res.Body)
 		if err != nil {
@@ -102,6 +94,14 @@ func (c *Client) ProfileByUsername(ctx context.Context, username string, timesta
 			Legacy: parsed.Legacy,
 			Demo:   parsed.Demo,
 		}, nil
+	case http.StatusNoContent:
+		return nil, fmt.Errorf("%w: %s", ProfileNotFound, username)
+	case http.StatusBadRequest:
+		badReqErr, err := parseRequestError(res)
+		if err != nil {
+			return nil, err
+		}
+		return nil, badReqErr
 	default:
 		return nil, fmt.Errorf("%w: %s", StatusError, res.Status)
 	}
@@ -123,12 +123,6 @@ func (c *Client) ProfileByUsernameBulk(ctx context.Context, usernames []string) 
 	defer func() { _ = res.Body.Close() }()
 
 	switch res.StatusCode {
-	case http.StatusBadRequest:
-		badReqErr, err := parseRequestError(res)
-		if err != nil {
-			return nil, err
-		}
-		return nil, badReqErr
 	case http.StatusOK:
 		data, err := io.ReadAll(res.Body)
 		if err != nil {
@@ -141,6 +135,12 @@ func (c *Client) ProfileByUsernameBulk(ctx context.Context, usernames []string) 
 		}
 
 		return profiles, nil
+	case http.StatusBadRequest:
+		badReqErr, err := parseRequestError(res)
+		if err != nil {
+			return nil, err
+		}
+		return nil, badReqErr
 	default:
 		return nil, fmt.Errorf("%w: %s", StatusError, res.Status)
 	}
