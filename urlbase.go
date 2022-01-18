@@ -1,8 +1,8 @@
 package yagma
 
 const (
-	MojangAPI           = "https://api.mojang.com"
-	MojangSessionServer = "https://sessionserver.mojang.com"
+	mojangAPI           = "https://api.mojang.com"
+	mojangSessionServer = "https://sessionserver.mojang.com"
 )
 
 type URLBase struct {
@@ -11,18 +11,10 @@ type URLBase struct {
 }
 
 func NewMojangURLBase() *URLBase {
-	return NewURLBase("", "")
+	return NewURLBase(mojangAPI, mojangSessionServer)
 }
 
 func NewURLBase(mojangAPI string, sessionServer string) *URLBase {
-	if mojangAPI == "" {
-		mojangAPI = MojangAPI
-	}
-
-	if sessionServer == "" {
-		sessionServer = MojangSessionServer
-	}
-
 	return &URLBase{
 		mojangAPI:     mojangAPI,
 		sessionServer: sessionServer,
