@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -48,21 +49,7 @@ func parseRequestError(res *http.Response) (*RequestError, error) {
 
 // Profile by username
 
-type Profile struct {
-	Name   string
-	ID     uuid.UUID
-	Legacy bool
-	Demo   bool
-}
-
-type profileWithCustomUUID struct {
-	Name   string
-	ID     UUID
-	Legacy bool
-	Demo   bool
-}
-
-var ProfileNotFound = errors.New("there is no user with such username")
+var ProfileNotFound = errors.New("user not found")
 
 func (c *Client) ProfileByUsername(ctx context.Context, username string, timestamp time.Time) (*Profile, error) {
 	reqURL := c.urlBase.mojangAPI + "/users/profiles/minecraft/" + url.QueryEscape(username)
@@ -83,17 +70,12 @@ func (c *Client) ProfileByUsername(ctx context.Context, username string, timesta
 			return nil, fmt.Errorf("%w: %s", HTTPError, err)
 		}
 
-		parsed := &profileWithCustomUUID{}
-		if err := json.Unmarshal(data, parsed); err != nil {
+		m := &profileJSONMapping{}
+		if err := json.Unmarshal(data, m); err != nil {
 			return nil, fmt.Errorf("%w: %s", JSONError, err)
 		}
 
-		return &Profile{
-			Name:   parsed.Name,
-			ID:     uuid.UUID(parsed.ID),
-			Legacy: parsed.Legacy,
-			Demo:   parsed.Demo,
-		}, nil
+		return m.Wrap(), nil
 	case http.StatusNoContent:
 		return nil, fmt.Errorf("%w: %s", ProfileNotFound, username)
 	case http.StatusBadRequest:
@@ -135,6 +117,43 @@ func (c *Client) ProfileByUsernameBulk(ctx context.Context, usernames []string) 
 		}
 
 		return profiles, nil
+	case http.StatusBadRequest:
+		badReqErr, err := parseRequestError(res)
+		if err != nil {
+			return nil, err
+		}
+		return nil, badReqErr
+	default:
+		return nil, fmt.Errorf("%w: %s", StatusError, res.Status)
+	}
+}
+
+// Profile with skin/cape by UUID
+
+func (c *Client) ProfileByUUID(ctx context.Context, uuid uuid.UUID) (*Profile, error) {
+	reqURL := c.urlBase.sessionServer + "/session/minecraft/profile/" + strings.Replace(uuid.String(), "-", "", -1)
+
+	res, err := c.sendHTTPReq(ctx, http.MethodGet, reqURL, nil, nil)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", HTTPError, err)
+	}
+	defer func() { _ = res.Body.Close() }()
+
+	switch res.StatusCode {
+	case http.StatusOK:
+		data, err := io.ReadAll(res.Body)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %s", HTTPError, err)
+		}
+
+		m := &profileJSONMapping{}
+		if err := json.Unmarshal(data, m); err != nil {
+			return nil, fmt.Errorf("%w: %s", JSONError, err)
+		}
+
+		return m.Wrap(), nil
+	case http.StatusNoContent:
+		return nil, ProfileNotFound
 	case http.StatusBadRequest:
 		badReqErr, err := parseRequestError(res)
 		if err != nil {
