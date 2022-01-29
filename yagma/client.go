@@ -8,13 +8,13 @@ import (
 
 type Client struct {
 	httpClient *http.Client
-	urlBase    *URLBase
+	baseURL    *BaseURL
 }
 
 func New() *Client {
 	return NewWithOptions(
 		WithHTTPClient(&http.Client{}),
-		WithURLBase(NewMojangURLBase()),
+		WithURLBase(NewMojangBaseURL()),
 	)
 }
 
@@ -37,8 +37,8 @@ func WithHTTPClient(client *http.Client) Option {
 	}}
 }
 
-func WithURLBase(urlBase *URLBase) Option {
+func WithURLBase(urlBase *BaseURL) Option {
 	return Option{func(c *Client) {
-		c.urlBase = urlBase
+		c.baseURL = urlBase
 	}}
 }

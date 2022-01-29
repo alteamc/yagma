@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -72,12 +73,12 @@ func parseRes(res *http.Response, dest interface{}) error {
 var ProfileNotFound = errors.New("user not found")
 
 func (c *Client) ProfileByUsername(ctx context.Context, username string, timestamp time.Time) (*Profile, error) {
-	reqURL := c.urlBase.mojangAPI + "/users/profiles/minecraft/" + username
+	v := make(url.Values)
 	if !timestamp.IsZero() {
-		reqURL += "?at=" + strconv.FormatInt(timestamp.UnixMilli(), 10)
+		v.Add("at", strconv.FormatInt(timestamp.UnixMilli(), 10))
 	}
 
-	res, err := c.sendHTTPReq(ctx, http.MethodGet, reqURL, nil, nil)
+	res, err := c.sendHTTPReq(ctx, http.MethodGet, c.baseURL.API("/users/profiles/minecraft/"+username, v), nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", HTTPError, err)
 	}
@@ -102,13 +103,12 @@ func (c *Client) ProfileByUsername(ctx context.Context, username string, timesta
 // Profile by username (bulk)
 
 func (c *Client) ProfileByUsernameBulk(ctx context.Context, usernames []string) ([]*Profile, error) {
-	reqURL := c.urlBase.mojangAPI + "/profiles/minecraft"
 	bodyBytes, err := json.Marshal(usernames)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", HTTPError, err)
 	}
 
-	res, err := c.sendHTTPReq(ctx, http.MethodPost, reqURL, nil, bytes.NewBuffer(bodyBytes))
+	res, err := c.sendHTTPReq(ctx, http.MethodPost, c.baseURL.API("/profiles/minecraft", nil), nil, bytes.NewBuffer(bodyBytes))
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", HTTPError, err)
 	}
@@ -131,9 +131,7 @@ func (c *Client) ProfileByUsernameBulk(ctx context.Context, usernames []string) 
 // Name history by UUID
 
 func (c *Client) NameHistoryByUUID(ctx context.Context, uuid uuid.UUID) ([]*NameHistoryRecord, error) {
-	reqURL := c.urlBase.mojangAPI + "/user/profiles/" + uuid.String() + "/names"
-
-	res, err := c.sendHTTPReq(ctx, http.MethodGet, reqURL, nil, nil)
+	res, err := c.sendHTTPReq(ctx, http.MethodGet, c.baseURL.API("/user/profiles/"+uuid.String()+"/names", nil), nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", HTTPError, err)
 	}
@@ -158,9 +156,7 @@ func (c *Client) NameHistoryByUUID(ctx context.Context, uuid uuid.UUID) ([]*Name
 // Profile with skin/cape by UUID
 
 func (c *Client) ProfileByUUID(ctx context.Context, uuid uuid.UUID) (*Profile, error) {
-	reqURL := c.urlBase.sessionServer + "/session/minecraft/profile/" + strings.Replace(uuid.String(), "-", "", -1)
-
-	res, err := c.sendHTTPReq(ctx, http.MethodGet, reqURL, nil, nil)
+	res, err := c.sendHTTPReq(ctx, http.MethodGet, c.baseURL.SessionServer("/session/minecraft/profile/"+strings.Replace(uuid.String(), "-", "", -1), nil), nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", HTTPError, err)
 	}
@@ -185,9 +181,7 @@ func (c *Client) ProfileByUUID(ctx context.Context, uuid uuid.UUID) (*Profile, e
 // Blocked servers
 
 func (c *Client) BlockedServerHashes(ctx context.Context) ([]string, error) {
-	reqURL := c.urlBase.sessionServer + "/blockedservers"
-
-	res, err := c.sendHTTPReq(ctx, http.MethodGet, reqURL, nil, nil)
+	res, err := c.sendHTTPReq(ctx, http.MethodGet, c.baseURL.SessionServer("/blockedservers", nil), nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", HTTPError, err)
 	}
@@ -208,8 +202,6 @@ func (c *Client) BlockedServerHashes(ctx context.Context) ([]string, error) {
 // Statistics
 
 func (c *Client) Statistics(ctx context.Context, keys []MetricKey) (*Statistics, error) {
-	reqURL := c.urlBase.mojangAPI + "/orders/statistics"
-
 	header := make(http.Header)
 	header.Add("Content-Type", "application/json")
 
@@ -218,7 +210,7 @@ func (c *Client) Statistics(ctx context.Context, keys []MetricKey) (*Statistics,
 		return nil, fmt.Errorf("%w: %s", HTTPError, err)
 	}
 
-	res, err := c.sendHTTPReq(ctx, http.MethodPost, reqURL, header, bytes.NewBuffer(bodyBytes))
+	res, err := c.sendHTTPReq(ctx, http.MethodPost, c.baseURL.API("/orders/statistics", nil), header, bytes.NewBuffer(bodyBytes))
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", HTTPError, err)
 	}
