@@ -33,18 +33,18 @@ func (e *RequestError) Error() string {
 	return fmt.Sprintf("%s: %s", e.Type, e.Message)
 }
 
-func parseRequestError(res *http.Response) (*RequestError, error) {
+func parseRequestError(res *http.Response) error {
 	data, err := io.ReadAll(res.Body)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %s", HTTPError, err)
+		return fmt.Errorf("%w: %s", HTTPError, err)
 	}
 
-	parsed := &RequestError{}
-	if err := json.Unmarshal(data, parsed); err != nil {
-		return nil, fmt.Errorf("%w: %s", JSONError, err)
+	reqErr := &RequestError{}
+	if err := json.Unmarshal(data, reqErr); err != nil {
+		return fmt.Errorf("%w: %s", JSONError, err)
 	}
 
-	return nil, parsed
+	return reqErr
 }
 
 // Profile by username
@@ -79,11 +79,7 @@ func (c *Client) ProfileByUsername(ctx context.Context, username string, timesta
 	case http.StatusNoContent:
 		return nil, fmt.Errorf("%w: %s", ProfileNotFound, username)
 	case http.StatusBadRequest:
-		badReqErr, err := parseRequestError(res)
-		if err != nil {
-			return nil, err
-		}
-		return nil, badReqErr
+		return nil, parseRequestError(res)
 	default:
 		return nil, fmt.Errorf("%w: %s", StatusError, res.Status)
 	}
@@ -118,11 +114,7 @@ func (c *Client) ProfileByUsernameBulk(ctx context.Context, usernames []string) 
 
 		return profiles, nil
 	case http.StatusBadRequest:
-		badReqErr, err := parseRequestError(res)
-		if err != nil {
-			return nil, err
-		}
-		return nil, badReqErr
+		return nil, parseRequestError(res)
 	default:
 		return nil, fmt.Errorf("%w: %s", StatusError, res.Status)
 	}
@@ -155,11 +147,7 @@ func (c *Client) NameHistoryByUUID(ctx context.Context, uuid uuid.UUID) ([]*Name
 	case http.StatusNoContent:
 		return nil, fmt.Errorf("%w: %s", ProfileNotFound, uuid)
 	case http.StatusBadRequest:
-		badReqErr, err := parseRequestError(res)
-		if err != nil {
-			return nil, err
-		}
-		return nil, badReqErr
+		return nil, parseRequestError(res)
 	default:
 		return nil, fmt.Errorf("%w: %s", StatusError, res.Status)
 	}
@@ -192,11 +180,7 @@ func (c *Client) ProfileByUUID(ctx context.Context, uuid uuid.UUID) (*Profile, e
 	case http.StatusNoContent:
 		return nil, ProfileNotFound
 	case http.StatusBadRequest:
-		badReqErr, err := parseRequestError(res)
-		if err != nil {
-			return nil, err
-		}
-		return nil, badReqErr
+		return nil, parseRequestError(res)
 	default:
 		return nil, fmt.Errorf("%w: %s", StatusError, res.Status)
 	}
@@ -277,11 +261,7 @@ func (c *Client) Statistics(ctx context.Context, keys []MetricKey) (*Statistics,
 
 		return s, nil
 	case http.StatusBadRequest:
-		badReqErr, err := parseRequestError(res)
-		if err != nil {
-			return nil, err
-		}
-		return nil, badReqErr
+		return nil, parseRequestError(res)
 	default:
 		return nil, fmt.Errorf("%w: %s", StatusError, res.Status)
 	}
