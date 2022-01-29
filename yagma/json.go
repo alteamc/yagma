@@ -13,8 +13,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// JSON-unmarshallable UUID implementation
-
+// UUID is a wrapper around uuid.UUID implementation that provides JSON unmarshalling logic.
 type UUID uuid.UUID
 
 func (u *UUID) UnmarshalJSON(p []byte) error {
@@ -27,14 +26,12 @@ func (u *UUID) UnmarshalJSON(p []byte) error {
 	return nil
 }
 
-// Profile
-
 type profileJSONMapping struct {
-	ID         UUID        `json:"id"`
-	Name       string      `json:"name"`
-	Legacy     bool        `json:"legacy"`
-	Demo       bool        `json:"demo"`
-	Properties []*Property `json:"properties"`
+	ID         UUID               `json:"id"`
+	Name       string             `json:"name"`
+	Legacy     bool               `json:"legacy"`
+	Demo       bool               `json:"demo"`
+	Properties []*ProfileProperty `json:"properties"`
 }
 
 func (m *profileJSONMapping) Wrap() *Profile {
@@ -47,22 +44,24 @@ func (m *profileJSONMapping) Wrap() *Profile {
 	}
 }
 
+// Profile represents Mojang user profile.
 type Profile struct {
 	ID         uuid.UUID
 	Name       string
 	Legacy     bool
 	Demo       bool
-	Properties []*Property
+	Properties []*ProfileProperty
 }
 
-// Profile property
-
-type Property struct {
+// ProfileProperty represents Mojang user profile property.
+type ProfileProperty struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 }
 
-func (p *Property) ProfileTextures() (*ProfileTextures, error) {
+// ProfileTextures attempts conversion of this ProfileProperty to ProfileTextures struct.
+// Returns an error if ProfileProperty Name value is not "textures".
+func (p *ProfileProperty) ProfileTextures() (*ProfileTextures, error) {
 	if p.Name != "textures" {
 		return nil, fmt.Errorf(`expected property name to be "value", got %#v`, p.Name)
 	}
@@ -80,8 +79,7 @@ func (p *Property) ProfileTextures() (*ProfileTextures, error) {
 	return m.Wrap(), nil
 }
 
-// Skin model
-
+// SkinModel is an enum type for wrapping Steve/Alex skin model type.
 type SkinModel byte
 
 const (
@@ -89,6 +87,7 @@ const (
 	SkinModelAlex
 )
 
+// ProfileTextures represents Minecraft skins associated with Mojang profile along with some metadata.
 type ProfileTextures struct {
 	Timestamp   time.Time
 	ProfileID   uuid.UUID
@@ -98,6 +97,8 @@ type ProfileTextures struct {
 	Cape        string
 }
 
+// ModelFromUUID determines whether default skin model type for ProfileTextures is Steve or Alex
+// based on Profile UUID.
 func (t *ProfileTextures) ModelFromUUID() SkinModel {
 	u := t.ProfileID
 	if (u[3]&0xf)^(u[7]&0xf)^(u[11]&0xf)^(u[15]&0xf) != 0 {
@@ -140,8 +141,7 @@ func (m *profileTexturesJSONMapping) Wrap() *ProfileTextures {
 	}
 }
 
-// JSON-unmarshallable Time implementation
-
+// Time is a wrapper around time.Time implementation that provides JSON unmarshalling logic.
 type Time time.Time
 
 func (t *Time) UnmarshalJSON(p []byte) error {
@@ -153,8 +153,6 @@ func (t *Time) UnmarshalJSON(p []byte) error {
 	*t = Time(time.UnixMilli(v))
 	return nil
 }
-
-// Name history record
 
 type nameHistoryRecordJSONMapping struct {
 	Name        string `json:"name"`
@@ -178,13 +176,13 @@ func (m nameHistoryRecordJSONMappingArray) Wrap() []*NameHistoryRecord {
 	return v
 }
 
+// NameHistoryRecord represents a name change record in Mojang profile name history.
 type NameHistoryRecord struct {
 	Name      string
 	ChangedAt time.Time
 }
 
-// Statistics
-
+// MetricKey is an enum type for wrapping Mojang sell statistics metric key type.
 type MetricKey string
 
 const (
@@ -196,6 +194,7 @@ const (
 	MetricDungeonsItemsSold                       = "item_sold_dungeons"
 )
 
+// Statistics represents brief statistics for MetricKey.
 type Statistics struct {
 	Total    int     `json:"total"`
 	Last24h  int     `json:"last24h"`
