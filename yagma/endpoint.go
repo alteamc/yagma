@@ -1,6 +1,7 @@
 package yagma
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -197,6 +198,48 @@ func (c *Client) ProfileByUUID(ctx context.Context, uuid uuid.UUID) (*Profile, e
 			return nil, err
 		}
 		return nil, badReqErr
+	default:
+		return nil, fmt.Errorf("%w: %s", StatusError, res.Status)
+	}
+}
+
+// Blocked servers
+
+func (c *Client) BlockedServerHashes(ctx context.Context) ([]string, error) {
+	reqURL := c.urlBase.sessionServer + "/blockedservers"
+
+	res, err := c.sendHTTPReq(ctx, http.MethodGet, reqURL, nil, nil)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", HTTPError, err)
+	}
+	defer func() { _ = res.Body.Close() }()
+
+	switch res.StatusCode {
+	case http.StatusOK:
+		ch := make(chan string)
+
+		go func() {
+			s := bufio.NewScanner(res.Body)
+			for s.Scan() {
+				ch <- s.Text()
+			}
+
+			close(ch)
+		}()
+
+		hash := make([]string, 0, 512)
+		for {
+			select {
+			case h, ok := <-ch:
+				if ok {
+					hash = append(hash, h)
+				} else {
+					return hash, nil
+				}
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			}
+		}
 	default:
 		return nil, fmt.Errorf("%w: %s", StatusError, res.Status)
 	}
