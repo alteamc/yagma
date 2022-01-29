@@ -1,7 +1,6 @@
 package yagma
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -19,7 +18,7 @@ import (
 // General errors
 
 var (
-	HTTPError   = errors.New("failed to send HTTP request")
+	HTTPError   = errors.New("failed to process HTTP request")
 	JSONError   = errors.New("failed to parse JSON response")
 	StatusError = errors.New("unknown status code")
 )
@@ -49,10 +48,18 @@ func parseRequestError(res *http.Response) error {
 	return reqErr
 }
 
-func parseRes(res *http.Response, dest interface{}) error {
+func readResBody(res *http.Response) ([]byte, error) {
 	data, err := io.ReadAll(res.Body)
 	if err != nil {
-		return fmt.Errorf("%w: %s", HTTPError, err)
+		return nil, fmt.Errorf("%w: %s", HTTPError, err)
+	}
+	return data, nil
+}
+
+func parseRes(res *http.Response, dest interface{}) error {
+	data, err := readResBody(res)
+	if err != nil {
+		return err
 	}
 	if err = json.Unmarshal(data, dest); err != nil {
 		return fmt.Errorf("%w: %s", JSONError, err)
@@ -188,30 +195,11 @@ func (c *Client) BlockedServerHashes(ctx context.Context) ([]string, error) {
 
 	switch res.StatusCode {
 	case http.StatusOK:
-		ch := make(chan string)
-
-		go func() {
-			s := bufio.NewScanner(res.Body)
-			for s.Scan() {
-				ch <- s.Text()
-			}
-
-			close(ch)
-		}()
-
-		hash := make([]string, 0, 512)
-		for {
-			select {
-			case h, ok := <-ch:
-				if ok {
-					hash = append(hash, h)
-				} else {
-					return hash, nil
-				}
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			}
+		data, err := readResBody(res)
+		if err != nil {
+			return nil, err
 		}
+		return strings.Split(string(data), "\n"), nil
 	default:
 		return nil, fmt.Errorf("%w: %s", StatusError, res.Status)
 	}
