@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -53,7 +52,7 @@ func parseRequestError(res *http.Response) (*RequestError, error) {
 var ProfileNotFound = errors.New("user not found")
 
 func (c *Client) ProfileByUsername(ctx context.Context, username string, timestamp time.Time) (*Profile, error) {
-	reqURL := c.urlBase.mojangAPI + "/users/profiles/minecraft/" + url.QueryEscape(username)
+	reqURL := c.urlBase.mojangAPI + "/users/profiles/minecraft/" + username
 	if !timestamp.IsZero() {
 		reqURL += "?at=" + strconv.FormatInt(timestamp.UnixMilli(), 10)
 	}
