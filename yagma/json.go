@@ -59,6 +59,8 @@ type ProfileProperty struct {
 	Value string `json:"value"`
 }
 
+// ProfileTextures attempts conversion of this ProfileProperty to ProfileTextures struct.
+// Returns an error if ProfileProperty Name value is not "textures".
 func (p *ProfileProperty) ProfileTextures() (*ProfileTextures, error) {
 	if p.Name != "textures" {
 		return nil, fmt.Errorf(`expected property name to be "value", got %#v`, p.Name)
