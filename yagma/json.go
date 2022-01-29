@@ -182,3 +182,22 @@ type NameHistoryRecord struct {
 	Name      string
 	ChangedAt time.Time
 }
+
+// Statistics
+
+type MetricKey string
+
+const (
+	MetricMinecraftItemsSold            MetricKey = "item_sold_minecraft"
+	MetricMinecraftPrepaidCardsRedeemed           = "prepaid_card_redeemed_minecraft"
+	MetricCobaltItemsSold                         = "item_sold_cobalt"
+	MetricCobaltPrepaidCardsRedeemed              = "prepaid_card_redeemed_cobalt"
+	MetricScrollsItemsSold                        = "item_sold_scrolls"
+	MetricDungeonsItemsSold                       = "item_sold_dungeons"
+)
+
+type Statistics struct {
+	Total    int     `json:"total"`
+	Last24h  int     `json:"last24h"`
+	Velocity float32 `json:"saleVelocityPerSeconds"`
+}

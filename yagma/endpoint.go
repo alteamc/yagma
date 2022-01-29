@@ -244,3 +244,46 @@ func (c *Client) BlockedServerHashes(ctx context.Context) ([]string, error) {
 		return nil, fmt.Errorf("%w: %s", StatusError, res.Status)
 	}
 }
+
+// Statistics
+
+func (c *Client) Statistics(ctx context.Context, keys []MetricKey) (*Statistics, error) {
+	reqURL := c.urlBase.mojangAPI + "/orders/statistics"
+
+	header := make(http.Header)
+	header.Add("Content-Type", "application/json")
+
+	bodyBytes, err := json.Marshal(map[string][]MetricKey{"metricKeys": keys})
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", HTTPError, err)
+	}
+
+	res, err := c.sendHTTPReq(ctx, http.MethodPost, reqURL, header, bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", HTTPError, err)
+	}
+	defer func() { _ = res.Body.Close() }()
+
+	switch res.StatusCode {
+	case http.StatusOK:
+		data, err := io.ReadAll(res.Body)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %s", HTTPError, err)
+		}
+
+		s := &Statistics{}
+		if err := json.Unmarshal(data, s); err != nil {
+			return nil, fmt.Errorf("%w: %s", JSONError, err)
+		}
+
+		return s, nil
+	case http.StatusBadRequest:
+		badReqErr, err := parseRequestError(res)
+		if err != nil {
+			return nil, err
+		}
+		return nil, badReqErr
+	default:
+		return nil, fmt.Errorf("%w: %s", StatusError, res.Status)
+	}
+}
