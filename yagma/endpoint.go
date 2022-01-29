@@ -47,6 +47,16 @@ func parseRequestError(res *http.Response) error {
 	return reqErr
 }
 
+// Utility methods
+
+func readBody(res *http.Response) ([]byte, error) {
+	data, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", HTTPError, err)
+	}
+	return data, nil
+}
+
 // Profile by username
 
 var ProfileNotFound = errors.New("user not found")
@@ -65,9 +75,9 @@ func (c *Client) ProfileByUsername(ctx context.Context, username string, timesta
 
 	switch res.StatusCode {
 	case http.StatusOK:
-		data, err := io.ReadAll(res.Body)
+		data, err := readBody(res)
 		if err != nil {
-			return nil, fmt.Errorf("%w: %s", HTTPError, err)
+			return nil, err
 		}
 
 		m := &profileJSONMapping{}
@@ -102,9 +112,9 @@ func (c *Client) ProfileByUsernameBulk(ctx context.Context, usernames []string) 
 
 	switch res.StatusCode {
 	case http.StatusOK:
-		data, err := io.ReadAll(res.Body)
+		data, err := readBody(res)
 		if err != nil {
-			return nil, fmt.Errorf("%w: %s", HTTPError, err)
+			return nil, err
 		}
 
 		profiles := make([]*Profile, 0, len(usernames))
@@ -133,9 +143,9 @@ func (c *Client) NameHistoryByUUID(ctx context.Context, uuid uuid.UUID) ([]*Name
 
 	switch res.StatusCode {
 	case http.StatusOK:
-		data, err := io.ReadAll(res.Body)
+		data, err := readBody(res)
 		if err != nil {
-			return nil, fmt.Errorf("%w: %s", HTTPError, err)
+			return nil, err
 		}
 
 		records := make(nameHistoryRecordJSONMappingArray, 0, 8)
@@ -166,9 +176,9 @@ func (c *Client) ProfileByUUID(ctx context.Context, uuid uuid.UUID) (*Profile, e
 
 	switch res.StatusCode {
 	case http.StatusOK:
-		data, err := io.ReadAll(res.Body)
+		data, err := readBody(res)
 		if err != nil {
-			return nil, fmt.Errorf("%w: %s", HTTPError, err)
+			return nil, err
 		}
 
 		m := &profileJSONMapping{}
@@ -249,9 +259,9 @@ func (c *Client) Statistics(ctx context.Context, keys []MetricKey) (*Statistics,
 
 	switch res.StatusCode {
 	case http.StatusOK:
-		data, err := io.ReadAll(res.Body)
+		data, err := readBody(res)
 		if err != nil {
-			return nil, fmt.Errorf("%w: %s", HTTPError, err)
+			return nil, err
 		}
 
 		s := &Statistics{}
