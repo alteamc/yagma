@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 	"time"
 
@@ -137,4 +138,47 @@ func (m *profileTexturesJSONMapping) Wrap() *ProfileTextures {
 		SkinModel:   sm,
 		Cape:        m.Textures.Cape.URL,
 	}
+}
+
+// JSON-unmarshallable Time implementation
+
+type Time time.Time
+
+func (t *Time) UnmarshalJSON(p []byte) error {
+	v, err := strconv.ParseInt(string(p), 10, 64)
+	if err != nil {
+		return err
+	}
+
+	*t = Time(time.UnixMilli(v))
+	return nil
+}
+
+// Name history record
+
+type nameHistoryRecordJSONMapping struct {
+	Name        string `json:"name"`
+	ChangedToAt Time   `json:"changedToAt"`
+}
+
+func (m *nameHistoryRecordJSONMapping) Wrap() *NameHistoryRecord {
+	return &NameHistoryRecord{
+		Name:      m.Name,
+		ChangedAt: time.Time(m.ChangedToAt),
+	}
+}
+
+type nameHistoryRecordJSONMappingArray []*nameHistoryRecordJSONMapping
+
+func (m nameHistoryRecordJSONMappingArray) Wrap() []*NameHistoryRecord {
+	v := make([]*NameHistoryRecord, len(m))
+	for i, p := range m {
+		v[i] = p.Wrap()
+	}
+	return v
+}
+
+type NameHistoryRecord struct {
+	Name      string
+	ChangedAt time.Time
 }

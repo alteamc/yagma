@@ -128,6 +128,43 @@ func (c *Client) ProfileByUsernameBulk(ctx context.Context, usernames []string) 
 	}
 }
 
+// Name history by UUID
+
+func (c *Client) NameHistoryByUUID(ctx context.Context, uuid uuid.UUID) ([]*NameHistoryRecord, error) {
+	reqURL := c.urlBase.mojangAPI + "/user/profiles/" + uuid.String() + "/names"
+
+	res, err := c.sendHTTPReq(ctx, http.MethodGet, reqURL, nil, nil)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", HTTPError, err)
+	}
+	defer func() { _ = res.Body.Close() }()
+
+	switch res.StatusCode {
+	case http.StatusOK:
+		data, err := io.ReadAll(res.Body)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %s", HTTPError, err)
+		}
+
+		records := make(nameHistoryRecordJSONMappingArray, 0, 8)
+		if err := json.Unmarshal(data, &records); err != nil {
+			return nil, fmt.Errorf("%w: %s", JSONError, err)
+		}
+
+		return records.Wrap(), nil
+	case http.StatusNoContent:
+		return nil, fmt.Errorf("%w: %s", ProfileNotFound, uuid)
+	case http.StatusBadRequest:
+		badReqErr, err := parseRequestError(res)
+		if err != nil {
+			return nil, err
+		}
+		return nil, badReqErr
+	default:
+		return nil, fmt.Errorf("%w: %s", StatusError, res.Status)
+	}
+}
+
 // Profile with skin/cape by UUID
 
 func (c *Client) ProfileByUUID(ctx context.Context, uuid uuid.UUID) (*Profile, error) {

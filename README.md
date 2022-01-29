@@ -17,31 +17,31 @@ thus certain endpoints will have higher priority for us to implement.
 
 Here's a support table for your convenience.
 
-| Endpoint                          | Support status                                                                                                                                                                                        |
-|-----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Username to UUID                  | Supported ✓                                                                                                                                                                                           |
-| Usernames to UUID                 | Supported ✓                                                                                                                                                                                           |
-| UUID to Name History              | Unsupported ✗                                                                                                                                                                                         |
-| UUID to Profile and Skin/Cape     | Supported ✓                                                                                                                                                                                           |
-| Blocked Servers                   | Unsupported ✗                                                                                                                                                                                         |
-| Statistics                        | Unsupported ✗                                                                                                                                                                                         |
-| Profile information               | Unsupported ✗                                                                                                                                                                                         |
-| Player Attributes                 | Unsupported ✗                                                                                                                                                                                         |
-| Profile Name Change Information   | Unsupported ✗                                                                                                                                                                                         |
-| Check Product Voucher             | Unsupported ✗                                                                                                                                                                                         |
-| Name Availability                 | Unsupported ✗                                                                                                                                                                                         |
-| Change Name                       | Unsupported ✗                                                                                                                                                                                         |
-| Change Skin                       | Unsupported ✗                                                                                                                                                                                         |
-| Upload Skin                       | Unsupported ✗                                                                                                                                                                                         |
-| Reset Skin                        | Unsupported ✗                                                                                                                                                                                         |
-| Hide Cape                         | Unsupported ✗                                                                                                                                                                                         |
-| Show Cape                         | Unsupported ✗                                                                                                                                                                                         |
-| Show Cape                         | Unsupported ✗                                                                                                                                                                                         |
-| Verify Security Location          | Unsupported ✗                                                                                                                                                                                         |
-| Get Security Questions            | Unsupported ✗                                                                                                                                                                                         |
-| Send Security Answers             | Unsupported ✗                                                                                                                                                                                         |
-| Get Account Migration Information | Unsupported ✗                                                                                                                                                                                         |
-| Account Migration OTP             | Unsupported ✗                                                                                                                                                                                         |
-| Verify Account Migration OTP      | Unsupported ✗                                                                                                                                                                                         |
-| Submit Migration Token            | Unsupported ✗                                                                                                                                                                                         |
-| Connect Xbox Live                 | Unsupported ✗                                                                                                                                                                                         |
+| Endpoint                          | Support status |
+|-----------------------------------|----------------|
+| Username to UUID                  | Supported ✓    |
+| Usernames to UUID                 | Supported ✓    |
+| UUID to Name History              | Supported ✓    |
+| UUID to Profile and Skin/Cape     | Supported ✓    |
+| Blocked Servers                   | Unsupported ✗  |
+| Statistics                        | Unsupported ✗  |
+| Profile information               | Unsupported ✗  |
+| Player Attributes                 | Unsupported ✗  |
+| Profile Name Change Information   | Unsupported ✗  |
+| Check Product Voucher             | Unsupported ✗  |
+| Name Availability                 | Unsupported ✗  |
+| Change Name                       | Unsupported ✗  |
+| Change Skin                       | Unsupported ✗  |
+| Upload Skin                       | Unsupported ✗  |
+| Reset Skin                        | Unsupported ✗  |
+| Hide Cape                         | Unsupported ✗  |
+| Show Cape                         | Unsupported ✗  |
+| Show Cape                         | Unsupported ✗  |
+| Verify Security Location          | Unsupported ✗  |
+| Get Security Questions            | Unsupported ✗  |
+| Send Security Answers             | Unsupported ✗  |
+| Get Account Migration Information | Unsupported ✗  |
+| Account Migration OTP             | Unsupported ✗  |
+| Verify Account Migration OTP      | Unsupported ✗  |
+| Submit Migration Token            | Unsupported ✗  |
+| Connect Xbox Live                 | Unsupported ✗  |
