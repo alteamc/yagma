@@ -19,7 +19,6 @@ Here's a support table for your convenience.
 
 | Endpoint                          | Support status                                                                                                                                                                                        |
 |-----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| API Status                        | Endpoint unavailable ✗<br/>(See [WEB-2303](https://bugs.mojang.com/browse/WEB-2303?focusedCommentId=1086543&page=com.atlassian.jira.plugin.system.issuetabpanels%3Acomment-tabpanel#comment-1086543)) |
 | Username to UUID                  | Supported ✓                                                                                                                                                                                           |
 | Usernames to UUID                 | Supported ✓                                                                                                                                                                                           |
 | UUID to Name History              | Unsupported ✗                                                                                                                                                                                         |
