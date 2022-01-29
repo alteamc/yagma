@@ -24,7 +24,7 @@ Here's a support table for your convenience.
 | UUID to Name History              | Supported ✓    |
 | UUID to Profile and Skin/Cape     | Supported ✓    |
 | Blocked Servers                   | Supported ✓    |
-| Statistics                        | Unsupported ✗  |
+| Statistics                        | Supported ✓    |
 | Profile information               | Unsupported ✗  |
 | Player Attributes                 | Unsupported ✗  |
 | Profile Name Change Information   | Unsupported ✗  |
