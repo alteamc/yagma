@@ -33,6 +33,8 @@ func (e *RequestError) Error() string {
 	return fmt.Sprintf("%s: %s", e.Type, e.Message)
 }
 
+// Utility methods
+
 func parseRequestError(res *http.Response) error {
 	data, err := io.ReadAll(res.Body)
 	if err != nil {
@@ -46,8 +48,6 @@ func parseRequestError(res *http.Response) error {
 
 	return reqErr
 }
-
-// Utility methods
 
 func readBody(res *http.Response) ([]byte, error) {
 	data, err := io.ReadAll(res.Body)
