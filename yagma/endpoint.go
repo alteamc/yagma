@@ -49,12 +49,15 @@ func parseRequestError(res *http.Response) error {
 	return reqErr
 }
 
-func readBody(res *http.Response) ([]byte, error) {
+func parseRes(res *http.Response, dest interface{}) error {
 	data, err := io.ReadAll(res.Body)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %s", HTTPError, err)
+		return fmt.Errorf("%w: %s", HTTPError, err)
 	}
-	return data, nil
+	if err = json.Unmarshal(data, dest); err != nil {
+		return fmt.Errorf("%w: %s", JSONError, err)
+	}
+	return nil
 }
 
 // Profile by username
@@ -75,16 +78,10 @@ func (c *Client) ProfileByUsername(ctx context.Context, username string, timesta
 
 	switch res.StatusCode {
 	case http.StatusOK:
-		data, err := readBody(res)
-		if err != nil {
+		m := &profileJSONMapping{}
+		if err = parseRes(res, m); err != nil {
 			return nil, err
 		}
-
-		m := &profileJSONMapping{}
-		if err = json.Unmarshal(data, m); err != nil {
-			return nil, fmt.Errorf("%w: %s", JSONError, err)
-		}
-
 		return m.Wrap(), nil
 	case http.StatusNoContent:
 		return nil, fmt.Errorf("%w: %s", ProfileNotFound, username)
@@ -112,16 +109,10 @@ func (c *Client) ProfileByUsernameBulk(ctx context.Context, usernames []string) 
 
 	switch res.StatusCode {
 	case http.StatusOK:
-		data, err := readBody(res)
-		if err != nil {
+		profiles := make([]*Profile, 0, len(usernames))
+		if err = parseRes(res, profiles); err != nil {
 			return nil, err
 		}
-
-		profiles := make([]*Profile, 0, len(usernames))
-		if err = json.Unmarshal(data, &profiles); err != nil {
-			return nil, fmt.Errorf("%w: %s", JSONError, err)
-		}
-
 		return profiles, nil
 	case http.StatusBadRequest:
 		return nil, parseRequestError(res)
@@ -143,16 +134,10 @@ func (c *Client) NameHistoryByUUID(ctx context.Context, uuid uuid.UUID) ([]*Name
 
 	switch res.StatusCode {
 	case http.StatusOK:
-		data, err := readBody(res)
-		if err != nil {
+		records := make(nameHistoryRecordJSONMappingArray, 0, 8)
+		if err = parseRes(res, records); err != nil {
 			return nil, err
 		}
-
-		records := make(nameHistoryRecordJSONMappingArray, 0, 8)
-		if err = json.Unmarshal(data, &records); err != nil {
-			return nil, fmt.Errorf("%w: %s", JSONError, err)
-		}
-
 		return records.Wrap(), nil
 	case http.StatusNoContent:
 		return nil, fmt.Errorf("%w: %s", ProfileNotFound, uuid)
@@ -176,16 +161,10 @@ func (c *Client) ProfileByUUID(ctx context.Context, uuid uuid.UUID) (*Profile, e
 
 	switch res.StatusCode {
 	case http.StatusOK:
-		data, err := readBody(res)
-		if err != nil {
+		m := &profileJSONMapping{}
+		if err = parseRes(res, m); err != nil {
 			return nil, err
 		}
-
-		m := &profileJSONMapping{}
-		if err = json.Unmarshal(data, m); err != nil {
-			return nil, fmt.Errorf("%w: %s", JSONError, err)
-		}
-
 		return m.Wrap(), nil
 	case http.StatusNoContent:
 		return nil, ProfileNotFound
@@ -259,16 +238,10 @@ func (c *Client) Statistics(ctx context.Context, keys []MetricKey) (*Statistics,
 
 	switch res.StatusCode {
 	case http.StatusOK:
-		data, err := readBody(res)
-		if err != nil {
+		s := &Statistics{}
+		if err = parseRes(res, s); err != nil {
 			return nil, err
 		}
-
-		s := &Statistics{}
-		if err = json.Unmarshal(data, s); err != nil {
-			return nil, fmt.Errorf("%w: %s", JSONError, err)
-		}
-
 		return s, nil
 	case http.StatusBadRequest:
 		return nil, parseRequestError(res)
