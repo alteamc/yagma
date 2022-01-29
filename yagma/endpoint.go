@@ -40,7 +40,7 @@ func parseRequestError(res *http.Response) error {
 	}
 
 	reqErr := &RequestError{}
-	if err := json.Unmarshal(data, reqErr); err != nil {
+	if err = json.Unmarshal(data, reqErr); err != nil {
 		return fmt.Errorf("%w: %s", JSONError, err)
 	}
 
@@ -71,7 +71,7 @@ func (c *Client) ProfileByUsername(ctx context.Context, username string, timesta
 		}
 
 		m := &profileJSONMapping{}
-		if err := json.Unmarshal(data, m); err != nil {
+		if err = json.Unmarshal(data, m); err != nil {
 			return nil, fmt.Errorf("%w: %s", JSONError, err)
 		}
 
@@ -108,7 +108,7 @@ func (c *Client) ProfileByUsernameBulk(ctx context.Context, usernames []string) 
 		}
 
 		profiles := make([]*Profile, 0, len(usernames))
-		if err := json.Unmarshal(data, &profiles); err != nil {
+		if err = json.Unmarshal(data, &profiles); err != nil {
 			return nil, fmt.Errorf("%w: %s", JSONError, err)
 		}
 
@@ -139,7 +139,7 @@ func (c *Client) NameHistoryByUUID(ctx context.Context, uuid uuid.UUID) ([]*Name
 		}
 
 		records := make(nameHistoryRecordJSONMappingArray, 0, 8)
-		if err := json.Unmarshal(data, &records); err != nil {
+		if err = json.Unmarshal(data, &records); err != nil {
 			return nil, fmt.Errorf("%w: %s", JSONError, err)
 		}
 
@@ -172,7 +172,7 @@ func (c *Client) ProfileByUUID(ctx context.Context, uuid uuid.UUID) (*Profile, e
 		}
 
 		m := &profileJSONMapping{}
-		if err := json.Unmarshal(data, m); err != nil {
+		if err = json.Unmarshal(data, m); err != nil {
 			return nil, fmt.Errorf("%w: %s", JSONError, err)
 		}
 
@@ -255,7 +255,7 @@ func (c *Client) Statistics(ctx context.Context, keys []MetricKey) (*Statistics,
 		}
 
 		s := &Statistics{}
-		if err := json.Unmarshal(data, s); err != nil {
+		if err = json.Unmarshal(data, s); err != nil {
 			return nil, fmt.Errorf("%w: %s", JSONError, err)
 		}
 
