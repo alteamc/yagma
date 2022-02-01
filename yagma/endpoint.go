@@ -94,7 +94,7 @@ func (c *Client) ProfileByUsername(ctx context.Context, username string, timesta
 		return m.Wrap(), nil
 	case http.StatusNoContent:
 		return nil, fmt.Errorf("%w: %s", ErrNoSuchProfile, username)
-	case http.StatusBadRequest:
+	case http.StatusBadRequest, http.StatusNotFound:
 		return nil, parseRequestError(res)
 	default:
 		return nil, fmt.Errorf("%w: %s", ErrUnknownStatusCode, res.Status)
