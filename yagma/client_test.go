@@ -38,7 +38,7 @@ func TestClient_ProfileByUsername(t *testing.T) {
 					"id":   "02ebc15aa0ef4db1baa44422b61bc0ed",
 				})
 				if err != nil {
-					return httpmock.NewBytesResponse(http.StatusInternalServerError, nil), nil
+					panic(err)
 				}
 				return res, nil
 			case username == "missingUser":
@@ -68,7 +68,7 @@ func TestClient_ProfileByUsername(t *testing.T) {
 		}
 	}
 
-	u, err = y.ProfileByUsername(ctx, "missingUser", time.Time{})
+	_, err = y.ProfileByUsername(ctx, "missingUser", time.Time{})
 	if err == nil {
 		t.Logf("unexpected nil error")
 		t.Fail()
@@ -79,7 +79,7 @@ func TestClient_ProfileByUsername(t *testing.T) {
 		}
 	}
 
-	u, err = y.ProfileByUsername(ctx, "", time.Time{})
+	_, err = y.ProfileByUsername(ctx, "", time.Time{})
 	if err == nil {
 		t.Logf("unexpected nil error")
 		t.Fail()
@@ -100,7 +100,7 @@ func TestClient_ProfileByUsername(t *testing.T) {
 	}
 
 	invalidName := strings.Repeat("0", 26)
-	u, err = y.ProfileByUsername(ctx, invalidName, time.Time{})
+	_, err = y.ProfileByUsername(ctx, invalidName, time.Time{})
 	if err == nil {
 		t.Logf("unexpected nil error")
 		t.Fail()
