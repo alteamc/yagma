@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jarcoal/httpmock"
 )
 
@@ -337,6 +338,99 @@ func TestClient_ProfileByUsernameBulk(t *testing.T) {
 				t.Logf("unexpeced error message %s", err.Message)
 				t.Fail()
 			}
+		}
+	}
+}
+
+func TestClient_ProfileByUUID(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	httpmock.RegisterResponder(
+		http.MethodGet, `=~^https://sessionserver\.mojang\.com/session/minecraft/profile/(.*)`,
+		func(req *http.Request) (*http.Response, error) {
+			id := httpmock.MustGetSubmatch(req, 1)
+			switch {
+			case id == "":
+				res, err := httpmock.NewJsonResponse(http.StatusNotFound, map[string]interface{}{
+					"error":        "Not Found",
+					"errorMessage": "The server has not found anything matching the request URI",
+				})
+				if err != nil {
+					panic(err)
+				}
+				return res, nil
+			case id == "02ebc15aa0ef4db1baa44422b61bc0ed":
+				res, err := httpmock.NewJsonResponse(http.StatusOK, map[string]interface{}{
+					"name": "aValidUser",
+					"id":   "02ebc15aa0ef4db1baa44422b61bc0ed",
+					"properties": []map[string]interface{}{
+						{
+							"name":  "textures",
+							"value": "eyJ0aW1lc3RhbXAiOjE2NDM4Mzg1MTQsInByb2ZpbGVJZCI6IjAyZWJjMTVhYTBlZjRkYjFiYWE0NDQyMmI2MWJjMGVkIiwicHJvZmlsZU5hbWUiOiJhVmFsaWRVc2VyIiwic2lnbmF0dXJlUmVxdWlyZWQiOnRydWUsInRleHR1cmVzIjp7IlNLSU4iOnsidXJsIjoiaHR0cHM6Ly9leGFtcGxlLmNvbS8ifSwiQ0FQRSI6eyJ1cmwiOiJodHRwczovL2V4YW1wbGUuY29tLyJ9fX0=",
+						},
+					},
+				})
+				if err != nil {
+					panic(err)
+				}
+				return res, nil
+			case id == "e28feaef81c242fda151cd5c8425f573":
+				return httpmock.NewBytesResponse(http.StatusNoContent, nil), nil
+			default:
+				panic(fmt.Errorf("unexpected uuid %s", id))
+			}
+		},
+	)
+
+	y := New()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	id := uuid.MustParse("02ebc15aa0ef4db1baa44422b61bc0ed")
+	u, err := y.ProfileByUUID(ctx, id)
+	if err != nil {
+		t.Logf("unexpected error %s", err)
+		t.Fail()
+	} else {
+		if u.Name != "aValidUser" {
+			t.Logf("unexpected name %s", u.Name)
+			t.Fail()
+		}
+		if u.ID != id {
+			t.Logf("unexpected uuid %s", id)
+			t.Fail()
+		}
+		if len(u.Properties) != 1 {
+			t.Logf("unexpected properties length %d", len(u.Properties))
+			t.Fail()
+		} else {
+			tx, err := u.Properties[0].ProfileTextures()
+			if err != nil {
+				t.Logf("unexpected error %s", err)
+				t.Fail()
+			} else {
+				if tx.Skin != "https://example.com/" {
+					t.Logf("unexpected skin url %s", tx.Skin)
+					t.Fail()
+				}
+				if tx.Cape != "https://example.com/" {
+					t.Logf("unexpected cape url %s", tx.Cape)
+					t.Fail()
+				}
+			}
+		}
+	}
+
+	id = uuid.MustParse("e28feaef81c242fda151cd5c8425f573")
+	_, err = y.ProfileByUUID(ctx, id)
+	if err == nil {
+		t.Logf("unexpected nil error")
+		t.Fail()
+	} else {
+		if !errors.Is(err, ErrNoSuchProfile) {
+			t.Logf("unexpected %s error", reflect.TypeOf(err).Name())
+			t.Fail()
 		}
 	}
 }
