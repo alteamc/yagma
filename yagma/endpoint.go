@@ -117,7 +117,7 @@ func (c *Client) ProfileByUsernameBulk(ctx context.Context, usernames []string) 
 	switch res.StatusCode {
 	case http.StatusOK:
 		profiles := make([]*Profile, 0, len(usernames))
-		if err = parseRes(res, profiles); err != nil {
+		if err = parseRes(res, &profiles); err != nil {
 			return nil, err
 		}
 		return profiles, nil
