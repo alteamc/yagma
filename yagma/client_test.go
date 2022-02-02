@@ -18,7 +18,7 @@ func TestClient_ProfileByUsername(t *testing.T) {
 	defer httpmock.DeactivateAndReset()
 
 	httpmock.RegisterResponder(
-		http.MethodGet, `=~^https://api\.mojang\.com/users/profiles/minecraft/((.+)(\?as=(\d+))?)?`,
+		http.MethodGet, `=~^https://api\.mojang\.com/users/profiles/minecraft/((.+)(\?at=(\d+))?)?`,
 		func(req *http.Request) (*http.Response, error) {
 			username := httpmock.MustGetSubmatch(req, 1)
 			switch {
