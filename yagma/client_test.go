@@ -25,15 +25,23 @@ func TestClient_ProfileByUsername(t *testing.T) {
 			username := httpmock.MustGetSubmatch(req, 1)
 			switch {
 			case username == "":
-				return httpmock.NewJsonResponse(http.StatusNotFound, map[string]interface{}{
+				res, err := httpmock.NewJsonResponse(http.StatusNotFound, map[string]interface{}{
 					"error":        "Not Found",
 					"errorMessage": "The server has not found anything matching the request URI",
 				})
+				if err != nil {
+					panic(err)
+				}
+				return res, nil
 			case len(username) > 25:
-				return httpmock.NewJsonResponse(http.StatusBadRequest, map[string]interface{}{
+				res, err := httpmock.NewJsonResponse(http.StatusBadRequest, map[string]interface{}{
 					"error":        "BadRequestException",
 					"errorMessage": fmt.Sprintf("%s is invalid", username),
 				})
+				if err != nil {
+					panic(err)
+				}
+				return res, nil
 			case username == "aValidUser":
 				res, err := httpmock.NewJsonResponse(http.StatusOK, map[string]interface{}{
 					"name": "aValidUser",
