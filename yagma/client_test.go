@@ -227,6 +227,15 @@ func isZero(t *testing.T, v interface{}) bool {
 	return true
 }
 
+func isNotNil(t *testing.T, v interface{}) bool {
+	if v == nil {
+		logfAndFail(t, "expected %v, but got nil", v)
+		return false
+	}
+
+	return true
+}
+
 // Test utilities
 
 func logfAndFail(t *testing.T, format string, v ...interface{}) {
@@ -285,27 +294,35 @@ func TestClient_ProfileByUsername(t *testing.T) {
 	defer cancel()
 
 	runTestStep(t, "random existing user", func(t *testing.T) {
-		u := users.PickRandomUser()
-		p, err := client.ProfileByUsername(ctx, u.Name, time.Time{})
-		if errEqNil(t, err) {
-			eq(t, u.ID, p.ID)
-			eq(t, u.Name, p.Name)
-			eq(t, u.Legacy, p.Legacy)
-			eq(t, u.Demo, p.Demo)
+		for i := 0; i < 100; i++ {
+			u := users.PickRandomUser()
+			p, err := client.ProfileByUsername(ctx, u.Name, time.Time{})
+
+			isNotNil(t, p)
+			if errEqNil(t, err) {
+				eq(t, u.ID, p.ID)
+				eq(t, u.Name, p.Name)
+				eq(t, u.Legacy, p.Legacy)
+				eq(t, u.Demo, p.Demo)
+			}
 		}
 	})
 
 	runTestStep(t, "random nonexistent user", func(t *testing.T) {
-		u := users.NewRandomUser()
-		p, err := client.ProfileByUsername(ctx, u.Name, time.Time{})
-		isZero(t, p)
-		if errNeqNil(t, err) {
-			errIs(t, err, ErrNoSuchProfile)
+		for i := 0; i < 100; i++ {
+			u := users.NewRandomUser()
+			p, err := client.ProfileByUsername(ctx, u.Name, time.Time{})
+
+			isZero(t, p)
+			if errNeqNil(t, err) {
+				errIs(t, err, ErrNoSuchProfile)
+			}
 		}
 	})
 
 	runTestStep(t, "empty username", func(t *testing.T) {
 		p, err := client.ProfileByUsername(ctx, "", time.Time{})
+
 		isZero(t, p)
 		if errNeqNil(t, err) {
 			as(t, err, reflect.TypeOf(&RequestError{}))
@@ -315,6 +332,7 @@ func TestClient_ProfileByUsername(t *testing.T) {
 	runTestStep(t, "invalid username", func(t *testing.T) {
 		n := strings.Repeat("0", 26)
 		p, err := client.ProfileByUsername(ctx, n, time.Time{})
+
 		isZero(t, p)
 		if errNeqNil(t, err) {
 			as(t, err, reflect.TypeOf(&RequestError{}))
