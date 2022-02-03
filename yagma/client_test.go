@@ -172,11 +172,6 @@ func newNoContentResponse() *http.Response {
 
 // Assertions
 
-func logfAndFail(t *testing.T, format string, v ...interface{}) {
-	t.Logf(format, v...)
-	t.Fail()
-}
-
 func errEqNil(t *testing.T, err error) bool {
 	if err != nil {
 		logfAndFail(t, "expected error to be nil, but got %v", err)
@@ -234,7 +229,12 @@ func isZero(t *testing.T, v interface{}) bool {
 
 // Test utilities
 
-func test(t *testing.T, desc string, fn func(t *testing.T)) {
+func logfAndFail(t *testing.T, format string, v ...interface{}) {
+	t.Logf(format, v...)
+	t.Fail()
+}
+
+func runTestStep(t *testing.T, desc string, fn func(t *testing.T)) {
 	t.Logf("Testing %v", desc)
 	fn(t)
 }
@@ -284,7 +284,7 @@ func TestClient_ProfileByUsername(t *testing.T) {
 	defer cancel()
 	y := New()
 
-	test(t, "random existing user", func(t *testing.T) {
+	runTestStep(t, "random existing user", func(t *testing.T) {
 		u := users.PickRandomUser()
 		p, err := y.ProfileByUsername(ctx, u.Name, time.Time{})
 		if errEqNil(t, err) {
@@ -295,7 +295,7 @@ func TestClient_ProfileByUsername(t *testing.T) {
 		}
 	})
 
-	test(t, "random nonexistent user", func(t *testing.T) {
+	runTestStep(t, "random nonexistent user", func(t *testing.T) {
 		u := users.NewRandomUser()
 		p, err := y.ProfileByUsername(ctx, u.Name, time.Time{})
 		isZero(t, p)
@@ -304,7 +304,7 @@ func TestClient_ProfileByUsername(t *testing.T) {
 		}
 	})
 
-	test(t, "empty username", func(t *testing.T) {
+	runTestStep(t, "empty username", func(t *testing.T) {
 		p, err := y.ProfileByUsername(ctx, "", time.Time{})
 		isZero(t, p)
 		if errNeqNil(t, err) {
@@ -312,7 +312,7 @@ func TestClient_ProfileByUsername(t *testing.T) {
 		}
 	})
 
-	test(t, "invalid username", func(t *testing.T) {
+	runTestStep(t, "invalid username", func(t *testing.T) {
 		n := strings.Repeat("0", 26)
 		p, err := y.ProfileByUsername(ctx, n, time.Time{})
 		isZero(t, p)
