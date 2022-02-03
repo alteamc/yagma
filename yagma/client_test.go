@@ -241,6 +241,7 @@ func runTestStep(t *testing.T, desc string, fn func(t *testing.T)) {
 
 // Test environment
 
+var client = New()
 var users = newMockUserRepo()
 
 // Tests
@@ -282,11 +283,10 @@ func TestClient_ProfileByUsername(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	y := New()
 
 	runTestStep(t, "random existing user", func(t *testing.T) {
 		u := users.PickRandomUser()
-		p, err := y.ProfileByUsername(ctx, u.Name, time.Time{})
+		p, err := client.ProfileByUsername(ctx, u.Name, time.Time{})
 		if errEqNil(t, err) {
 			eq(t, u.ID, p.ID)
 			eq(t, u.Name, p.Name)
@@ -297,7 +297,7 @@ func TestClient_ProfileByUsername(t *testing.T) {
 
 	runTestStep(t, "random nonexistent user", func(t *testing.T) {
 		u := users.NewRandomUser()
-		p, err := y.ProfileByUsername(ctx, u.Name, time.Time{})
+		p, err := client.ProfileByUsername(ctx, u.Name, time.Time{})
 		isZero(t, p)
 		if errNeqNil(t, err) {
 			errIs(t, err, ErrNoSuchProfile)
@@ -305,7 +305,7 @@ func TestClient_ProfileByUsername(t *testing.T) {
 	})
 
 	runTestStep(t, "empty username", func(t *testing.T) {
-		p, err := y.ProfileByUsername(ctx, "", time.Time{})
+		p, err := client.ProfileByUsername(ctx, "", time.Time{})
 		isZero(t, p)
 		if errNeqNil(t, err) {
 			as(t, err, reflect.TypeOf(&RequestError{}))
@@ -314,7 +314,7 @@ func TestClient_ProfileByUsername(t *testing.T) {
 
 	runTestStep(t, "invalid username", func(t *testing.T) {
 		n := strings.Repeat("0", 26)
-		p, err := y.ProfileByUsername(ctx, n, time.Time{})
+		p, err := client.ProfileByUsername(ctx, n, time.Time{})
 		isZero(t, p)
 		if errNeqNil(t, err) {
 			as(t, err, reflect.TypeOf(&RequestError{}))
