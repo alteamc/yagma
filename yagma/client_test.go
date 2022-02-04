@@ -236,6 +236,17 @@ func isNotNil(t *testing.T, v interface{}) bool {
 	return true
 }
 
+func saContains(t *testing.T, arr []string, v string) bool {
+	for _, it := range arr {
+		if it == v {
+			return true
+		}
+	}
+
+	logfAndFailNow(t, "expected %v to contain %v, but it does not", arr, v)
+	return false
+}
+
 // Test utilities
 
 func logfAndFailNow(t *testing.T, format string, v ...interface{}) {
