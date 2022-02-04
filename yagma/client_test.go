@@ -414,17 +414,19 @@ func TestClient_ProfileByUsernameBulk(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()
 
-	n := int(1 + mathRandom.Int31n(9))
-	names := make([]string, n)
-	for i := 0; i < n; i++ {
-		names[i] = users.PickRandomUser().Name
-	}
+	for i := 0; i < 100; i++ {
+		n := int(mathRandom.Int31n(10))
+		names := make([]string, n)
+		for k := 0; k < n; k++ {
+			names[k] = users.PickRandomUser().Name
+		}
 
-	p, err := client.ProfileByUsernameBulk(ctx, names)
-	if errEqNil(t, err) {
-		eq(t, n, len(p))
-		for _, it := range p {
-			saContains(t, names, it.Name)
+		p, err := client.ProfileByUsernameBulk(ctx, names)
+		if errEqNil(t, err) {
+			eq(t, n, len(p))
+			for _, it := range p {
+				saContains(t, names, it.Name)
+			}
 		}
 	}
 }
@@ -433,24 +435,26 @@ func TestClient_ProfileByUsernameBulk2(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()
 
-	ne := int(1 + mathRandom.Int31n(5))
-	nm := 10 - ne
-	names := make([]string, ne+nm)
-	exist := make([]string, ne)
-	for i := 0; i < ne; i++ {
-		name := users.PickRandomUser().Name
-		names[i] = name
-		exist[i] = name
-	}
-	for i := ne; i < ne+nm; i++ {
-		names[i] = users.NewRandomUser().Name
-	}
+	for i := 0; i < 100; i++ {
+		ne := int(mathRandom.Int31n(5 + 1))
+		nm := 10 - ne
+		names := make([]string, ne+nm)
+		exist := make([]string, ne)
+		for k := 0; k < ne; k++ {
+			name := users.PickRandomUser().Name
+			names[k] = name
+			exist[k] = name
+		}
+		for k := ne; k < ne+nm; k++ {
+			names[k] = users.NewRandomUser().Name
+		}
 
-	p, err := client.ProfileByUsernameBulk(ctx, names)
-	if errEqNil(t, err) {
-		eq(t, ne, len(p))
-		for _, it := range p {
-			saContains(t, exist, it.Name)
+		p, err := client.ProfileByUsernameBulk(ctx, names)
+		if errEqNil(t, err) {
+			eq(t, ne, len(p))
+			for _, it := range p {
+				saContains(t, exist, it.Name)
+			}
 		}
 	}
 }
@@ -461,8 +465,8 @@ func TestClient_ProfileByUsernameBulk3(t *testing.T) {
 
 	n := int(1 + mathRandom.Int31n(9))
 	names := make([]string, n)
-	for i := 0; i < n-1; i++ {
-		names[i] = users.PickRandomUser().Name
+	for k := 0; k < n-1; k++ {
+		names[k] = users.PickRandomUser().Name
 	}
 	names[n-1] = strings.Repeat("0", 26)
 
