@@ -243,22 +243,14 @@ func logfAndFail(t *testing.T, format string, v ...interface{}) {
 	t.Fail()
 }
 
-func runTestStep(t *testing.T, desc string, fn func(t *testing.T)) {
-	t.Logf("Testing %v", desc)
-	fn(t)
-}
-
 // Test environment
+
+const ctxTimeout = 10 * time.Second
 
 var client = New()
 var users = newMockUserRepo()
 
-// Tests
-
-func TestClient_ProfileByUsername(t *testing.T) {
-	httpmock.Activate()
-	defer httpmock.DeactivateAndReset()
-
+func init() {
 	httpmock.RegisterResponder(
 		http.MethodGet, `=~^https://api\.mojang\.com/users/profiles/minecraft/(?:(.*)(?:at=(.*))?)?`,
 		func(r *http.Request) (*http.Response, error) {
@@ -289,53 +281,76 @@ func TestClient_ProfileByUsername(t *testing.T) {
 			}
 		},
 	)
+}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+// Tests
+
+func TestClient_ProfileByUsername(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.Deactivate()
+
+	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()
 
-	runTestStep(t, "random existing user", func(t *testing.T) {
-		for i := 0; i < 100; i++ {
-			u := users.PickRandomUser()
-			p, err := client.ProfileByUsername(ctx, u.Name, time.Time{})
+	for i := 0; i < 100; i++ {
+		u := users.PickRandomUser()
+		p, err := client.ProfileByUsername(ctx, u.Name, time.Time{})
 
-			isNotNil(t, p)
-			if errEqNil(t, err) {
-				eq(t, u.ID, p.ID)
-				eq(t, u.Name, p.Name)
-				eq(t, u.Legacy, p.Legacy)
-				eq(t, u.Demo, p.Demo)
-			}
+		isNotNil(t, p)
+		if errEqNil(t, err) {
+			eq(t, u.ID, p.ID)
+			eq(t, u.Name, p.Name)
+			eq(t, u.Legacy, p.Legacy)
+			eq(t, u.Demo, p.Demo)
 		}
-	})
+	}
+}
 
-	runTestStep(t, "random nonexistent user", func(t *testing.T) {
-		for i := 0; i < 100; i++ {
-			u := users.NewRandomUser()
-			p, err := client.ProfileByUsername(ctx, u.Name, time.Time{})
+func TestClient_ProfileByUsername2(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.Deactivate()
 
-			isZero(t, p)
-			if errNeqNil(t, err) {
-				errIs(t, err, ErrNoSuchProfile)
-			}
-		}
-	})
+	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
+	defer cancel()
 
-	runTestStep(t, "empty username", func(t *testing.T) {
-		p, err := client.ProfileByUsername(ctx, "", time.Time{})
+	for i := 0; i < 100; i++ {
+		u := users.NewRandomUser()
+		p, err := client.ProfileByUsername(ctx, u.Name, time.Time{})
 
 		isZero(t, p)
 		if errNeqNil(t, err) {
-			as(t, err, reflect.TypeOf(&RequestError{}))
+			errIs(t, err, ErrNoSuchProfile)
 		}
-	})
+	}
+}
 
-	runTestStep(t, "invalid username", func(t *testing.T) {
-		n := strings.Repeat("0", 26)
-		p, err := client.ProfileByUsername(ctx, n, time.Time{})
+func TestClient_ProfileByUsername3(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.Deactivate()
 
-		isZero(t, p)
-		if errNeqNil(t, err) {
-			as(t, err, reflect.TypeOf(&RequestError{}))
-		}
-	})
+	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
+	defer cancel()
+
+	p, err := client.ProfileByUsername(ctx, "", time.Time{})
+
+	isZero(t, p)
+	if errNeqNil(t, err) {
+		as(t, err, reflect.TypeOf(&RequestError{}))
+	}
+}
+
+func TestClient_ProfileByUsername4(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.Deactivate()
+
+	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
+	defer cancel()
+
+	n := strings.Repeat("0", 26)
+	p, err := client.ProfileByUsername(ctx, n, time.Time{})
+
+	isZero(t, p)
+	if errNeqNil(t, err) {
+		as(t, err, reflect.TypeOf(&RequestError{}))
+	}
 }
