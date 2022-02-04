@@ -144,7 +144,7 @@ func (t *ProfileTextures) ProfileProperty() (*ProfileProperty, error) {
 
 type j = map[string]interface{}
 
-func newJSONResponse(status int, data j) *http.Response {
+func newJSONResponse(status int, data interface{}) *http.Response {
 	r, err := httpmock.NewJsonResponse(status, data)
 	if err != nil {
 		panic(err)
