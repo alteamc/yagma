@@ -265,6 +265,15 @@ func TestMain(m *testing.M) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 
+	registerProfileByUsernameResponder()
+	registerProfileByUsernameBulkResponder()
+
+	m.Run()
+}
+
+// Tests
+
+func registerProfileByUsernameResponder() {
 	httpmock.RegisterResponder(
 		http.MethodGet, `=~^https://api\.mojang\.com/users/profiles/minecraft/(?:(.*)(?:at=(.*))?)?`,
 		func(r *http.Request) (*http.Response, error) {
@@ -295,11 +304,7 @@ func TestMain(m *testing.M) {
 			}
 		},
 	)
-
-	m.Run()
 }
-
-// Tests
 
 func TestClient_ProfileByUsername(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
@@ -353,6 +358,114 @@ func TestClient_ProfileByUsername4(t *testing.T) {
 	n := strings.Repeat("0", 26)
 	p, err := client.ProfileByUsername(ctx, n, time.Time{})
 
+	isZero(t, p)
+	if errNeqNil(t, err) {
+		as(t, err, reflect.TypeOf(&RequestError{}))
+	}
+}
+
+func registerProfileByUsernameBulkResponder() {
+	httpmock.RegisterResponder(
+		http.MethodPost, `=~^https://api\.mojang\.com/profiles/minecraft`,
+		func(r *http.Request) (*http.Response, error) {
+			body, err := io.ReadAll(r.Body)
+			if err != nil {
+				panic(err)
+			}
+
+			var rn []string
+			if err = json.Unmarshal(body, &rn); err != nil {
+				panic(err)
+			}
+
+			p := make([]interface{}, 0, len(rn))
+			for _, name := range rn {
+				switch {
+				case len(name) == 0, len(name) > 25:
+					return newBadRequestExceptionResponse(name), nil
+				default:
+					user, found := users.FindByName(name)
+					if !found {
+						continue
+					}
+
+					data := j{
+						"id":   strings.ReplaceAll(user.ID.String(), "-", ""),
+						"name": user.Name,
+					}
+					if user.Legacy {
+						data["legacy"] = true
+					}
+					if user.Demo {
+						data["demo"] = true
+					}
+
+					p = append(p, data)
+				}
+			}
+
+			return newJSONResponse(http.StatusOK, p), nil
+		},
+	)
+}
+
+func TestClient_ProfileByUsernameBulk(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
+	defer cancel()
+
+	n := int(1 + mathRandom.Int31n(9))
+	names := make([]string, n)
+	for i := 0; i < n; i++ {
+		names[i] = users.PickRandomUser().Name
+	}
+
+	p, err := client.ProfileByUsernameBulk(ctx, names)
+	if errEqNil(t, err) {
+		eq(t, n, len(p))
+		for _, it := range p {
+			saContains(t, names, it.Name)
+		}
+	}
+}
+
+func TestClient_ProfileByUsernameBulk2(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
+	defer cancel()
+
+	ne := int(1 + mathRandom.Int31n(5))
+	nm := 10 - ne
+	names := make([]string, ne+nm)
+	exist := make([]string, ne)
+	for i := 0; i < ne; i++ {
+		name := users.PickRandomUser().Name
+		names[i] = name
+		exist[i] = name
+	}
+	for i := ne; i < ne+nm; i++ {
+		names[i] = users.NewRandomUser().Name
+	}
+
+	p, err := client.ProfileByUsernameBulk(ctx, names)
+	if errEqNil(t, err) {
+		eq(t, ne, len(p))
+		for _, it := range p {
+			saContains(t, exist, it.Name)
+		}
+	}
+}
+
+func TestClient_ProfileByUsernameBulk3(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
+	defer cancel()
+
+	n := int(1 + mathRandom.Int31n(9))
+	names := make([]string, n)
+	for i := 0; i < n-1; i++ {
+		names[i] = users.PickRandomUser().Name
+	}
+	names[n-1] = strings.Repeat("0", 26)
+
+	p, err := client.ProfileByUsernameBulk(ctx, names)
 	isZero(t, p)
 	if errNeqNil(t, err) {
 		as(t, err, reflect.TypeOf(&RequestError{}))
