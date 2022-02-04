@@ -174,7 +174,7 @@ func newNoContentResponse() *http.Response {
 
 func as(t *testing.T, v interface{}, dt reflect.Type) bool {
 	if !reflect.TypeOf(v).AssignableTo(dt) {
-		logfAndFail(t, "expected %v to be of type %v, but got type %v", v, dt, reflect.TypeOf(v))
+		logfAndFailNow(t, "expected %v to be of type %v, but got type %v", v, dt, reflect.TypeOf(v))
 		return false
 	}
 
@@ -193,7 +193,7 @@ func eq(t *testing.T, exp interface{}, act interface{}) bool {
 
 func errEqNil(t *testing.T, err error) bool {
 	if err != nil {
-		logfAndFail(t, "expected error to be nil, but got %v", err)
+		logfAndFailNow(t, "expected error to be nil, but got %v", err)
 		return false
 	}
 
@@ -202,7 +202,7 @@ func errEqNil(t *testing.T, err error) bool {
 
 func errNeqNil(t *testing.T, err error) bool {
 	if err == nil {
-		logfAndFail(t, "expected error to be not nil, but got nil")
+		logfAndFailNow(t, "expected error to be not nil, but got nil")
 		return false
 	}
 
@@ -211,7 +211,7 @@ func errNeqNil(t *testing.T, err error) bool {
 
 func errIs(t *testing.T, err error, check error) bool {
 	if !errors.Is(err, check) {
-		logfAndFail(t, "expected %v error, but got %v", check, err)
+		logfAndFailNow(t, "expected %v error, but got %v", check, err)
 		return false
 	}
 
@@ -220,7 +220,7 @@ func errIs(t *testing.T, err error, check error) bool {
 
 func isZero(t *testing.T, v interface{}) bool {
 	if !reflect.ValueOf(v).IsZero() {
-		logfAndFail(t, "expected %v, but got %v", reflect.Zero(reflect.TypeOf(v)), v)
+		logfAndFailNow(t, "expected %v, but got %v", reflect.Zero(reflect.TypeOf(v)), v)
 		return false
 	}
 
@@ -229,7 +229,7 @@ func isZero(t *testing.T, v interface{}) bool {
 
 func isNotNil(t *testing.T, v interface{}) bool {
 	if v == nil {
-		logfAndFail(t, "expected %v, but got nil", v)
+		logfAndFailNow(t, "expected %v, but got nil", v)
 		return false
 	}
 
@@ -238,9 +238,9 @@ func isNotNil(t *testing.T, v interface{}) bool {
 
 // Test utilities
 
-func logfAndFail(t *testing.T, format string, v ...interface{}) {
+func logfAndFailNow(t *testing.T, format string, v ...interface{}) {
 	t.Logf(format, v...)
-	t.Fail()
+	t.FailNow()
 }
 
 // Test environment
