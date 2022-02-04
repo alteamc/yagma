@@ -250,7 +250,10 @@ const ctxTimeout = 10 * time.Second
 var client = New()
 var users = newMockUserRepo()
 
-func init() {
+func TestMain(m *testing.M) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
 	httpmock.RegisterResponder(
 		http.MethodGet, `=~^https://api\.mojang\.com/users/profiles/minecraft/(?:(.*)(?:at=(.*))?)?`,
 		func(r *http.Request) (*http.Response, error) {
@@ -281,14 +284,13 @@ func init() {
 			}
 		},
 	)
+
+	m.Run()
 }
 
 // Tests
 
 func TestClient_ProfileByUsername(t *testing.T) {
-	httpmock.Activate()
-	defer httpmock.Deactivate()
-
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()
 
@@ -307,9 +309,6 @@ func TestClient_ProfileByUsername(t *testing.T) {
 }
 
 func TestClient_ProfileByUsername2(t *testing.T) {
-	httpmock.Activate()
-	defer httpmock.Deactivate()
-
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()
 
@@ -325,9 +324,6 @@ func TestClient_ProfileByUsername2(t *testing.T) {
 }
 
 func TestClient_ProfileByUsername3(t *testing.T) {
-	httpmock.Activate()
-	defer httpmock.Deactivate()
-
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()
 
@@ -340,9 +336,6 @@ func TestClient_ProfileByUsername3(t *testing.T) {
 }
 
 func TestClient_ProfileByUsername4(t *testing.T) {
-	httpmock.Activate()
-	defer httpmock.Deactivate()
-
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()
 
