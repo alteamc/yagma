@@ -172,6 +172,25 @@ func newNoContentResponse() *http.Response {
 
 // Assertions
 
+func as(t *testing.T, v interface{}, dt reflect.Type) bool {
+	if !reflect.TypeOf(v).AssignableTo(dt) {
+		logfAndFail(t, "expected %v to be of type %v, but got type %v", v, dt, reflect.TypeOf(v))
+		return false
+	}
+
+	return true
+}
+
+func eq(t *testing.T, exp interface{}, act interface{}) bool {
+	if exp != act {
+		t.Logf("expected %v, got %v", exp, act)
+		t.Fail()
+		return false
+	}
+
+	return true
+}
+
 func errEqNil(t *testing.T, err error) bool {
 	if err != nil {
 		logfAndFail(t, "expected error to be nil, but got %v", err)
@@ -190,28 +209,9 @@ func errNeqNil(t *testing.T, err error) bool {
 	return true
 }
 
-func as(t *testing.T, v interface{}, dt reflect.Type) bool {
-	if !reflect.TypeOf(v).AssignableTo(dt) {
-		logfAndFail(t, "expected %v to be of type %v, but got type %v", v, dt, reflect.TypeOf(v))
-		return false
-	}
-
-	return true
-}
-
 func errIs(t *testing.T, err error, check error) bool {
 	if !errors.Is(err, check) {
 		logfAndFail(t, "expected %v error, but got %v", check, err)
-		return false
-	}
-
-	return true
-}
-
-func eq(t *testing.T, exp interface{}, act interface{}) bool {
-	if exp != act {
-		t.Logf("expected %v, got %v", exp, act)
-		t.Fail()
 		return false
 	}
 
