@@ -25,8 +25,9 @@ var (
 )
 
 type RequestError struct {
-	Type    string `json:"error"`
-	Message string `json:"errorMessage"`
+	Type             string `json:"error"`
+	Message          string `json:"errorMessage"`
+	DeveloperMessage string `json:"developerMessage"`
 }
 
 func (e *RequestError) Error() string {
