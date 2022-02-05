@@ -23,7 +23,7 @@ import (
 
 // Mock user data repository
 
-const mockUserCount = 20000
+const mockUserCount = 2000
 
 type mockUser Profile
 
@@ -53,19 +53,29 @@ func newMockUserRepo() *mockUserRepo {
 }
 
 func (r *mockUserRepo) NewRandomUser() *mockUser {
+	var id uuid.UUID
+
 	id, err := uuid.NewRandom()
 	if err != nil {
 		panic(err)
 	}
 
-	b := make([]byte, mathRandom.Int31n(6)+4)
-	if _, err = cryptoRandom.Read(b); err != nil {
-		panic(err)
+	n := 3 + mathRandom.Intn(5)
+	names := make([]*NameHistoryRecord, 0, 8)
+	now := time.UnixMilli(time.Now().UnixMilli() - mathRandom.Int63n(1_000_000)*1000)
+	for i := 1; i < n; i++ {
+		now = time.UnixMilli(now.UnixMilli() - mathRandom.Int63n(100_000)*1000)
+		names = append(names, &NameHistoryRecord{
+			Name:      randomString(3 + mathRandom.Intn(22)),
+			ChangedAt: now,
+		})
 	}
+	names = append(names, &NameHistoryRecord{Name: randomString(3 + mathRandom.Intn(22))})
+	r.nameHistoryByUUID[id] = names
 
 	return &mockUser{
 		ID:         id,
-		Name:       hex.EncodeToString(b),
+		Name:       randomString(8 + mathRandom.Intn(16)),
 		Legacy:     mathRandom.Intn(2) == 0,
 		Demo:       mathRandom.Intn(2) == 0,
 		Properties: nil,
@@ -76,12 +86,37 @@ func (r *mockUserRepo) PickRandomUser() *mockUser {
 	return r.usersByUUID[r.idList[mathRandom.Intn(mockUserCount)]]
 }
 
+func (r *mockUserRepo) PickNameHistory(uuid uuid.UUID) ([]*NameHistoryRecord, bool) {
+	hist, err := r.nameHistoryByUUID[uuid]
+	return hist, err
+}
+
 func (r *mockUserRepo) FindByName(name string) (*mockUser, bool) {
 	u, e := r.usersByName[strings.ToLower(name)]
 	return u, e
 }
 
 // Utility method definition
+
+func randomString(length int) string {
+	var buf []byte
+	if length%2 != 0 {
+		buf = make([]byte, (length/2)+1)
+	} else {
+		buf = make([]byte, length/2)
+	}
+
+	_, err := cryptoRandom.Read(buf)
+	if err != nil {
+		panic(err)
+	}
+
+	if length%2 != 0 {
+		return hex.EncodeToString(buf)[:length]
+	}
+
+	return hex.EncodeToString(buf)
+}
 
 func (t *ProfileTextures) Unwrap() *profileTexturesJSONMapping {
 	m := &profileTexturesJSONMapping{
