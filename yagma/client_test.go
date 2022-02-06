@@ -265,6 +265,15 @@ func isZero(t *testing.T, v interface{}) bool {
 	return true
 }
 
+func isNotZero(t *testing.T, v interface{}) bool {
+	if reflect.ValueOf(v).IsZero() {
+		logfAndFailNow(t, "expected %v, but got %v", reflect.Zero(reflect.TypeOf(v)), v)
+		return false
+	}
+
+	return true
+}
+
 func isNotNil(t *testing.T, v interface{}) bool {
 	if v == nil {
 		logfAndFailNow(t, "expected %v, but got nil", v)
