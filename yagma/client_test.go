@@ -26,12 +26,13 @@ import (
 const mockUserCount = 2000
 
 type mockUser Profile
+type mockNameHistory nameHistoryRecordJSONMappingArray
 
 type mockUserRepo struct {
 	idList            []uuid.UUID
 	usersByUUID       map[uuid.UUID]*mockUser
 	usersByName       map[string]*mockUser
-	nameHistoryByUUID map[uuid.UUID][]*NameHistoryRecord
+	nameHistoryByUUID map[uuid.UUID]mockNameHistory
 }
 
 func newMockUserRepo() *mockUserRepo {
@@ -39,20 +40,21 @@ func newMockUserRepo() *mockUserRepo {
 		idList:            make([]uuid.UUID, mockUserCount),
 		usersByUUID:       make(map[uuid.UUID]*mockUser, mockUserCount),
 		usersByName:       make(map[string]*mockUser, mockUserCount),
-		nameHistoryByUUID: make(map[uuid.UUID][]*NameHistoryRecord, mockUserCount),
+		nameHistoryByUUID: make(map[uuid.UUID]mockNameHistory, mockUserCount),
 	}
 
 	for i := 0; i < mockUserCount; i++ {
-		u := r.NewRandomUser()
+		u, n := r.NewRandomUser()
 		r.idList[i] = u.ID
 		r.usersByUUID[u.ID] = u
 		r.usersByName[strings.ToLower(u.Name)] = u
+		r.nameHistoryByUUID[u.ID] = n
 	}
 
 	return r
 }
 
-func (r *mockUserRepo) NewRandomUser() *mockUser {
+func (r *mockUserRepo) NewRandomUser() (*mockUser, mockNameHistory) {
 	var id uuid.UUID
 
 	id, err := uuid.NewRandom()
@@ -61,17 +63,16 @@ func (r *mockUserRepo) NewRandomUser() *mockUser {
 	}
 
 	n := 3 + mathRandom.Intn(5)
-	names := make([]*NameHistoryRecord, 0, 8)
+	names := make(mockNameHistory, 0, 8)
 	now := time.UnixMilli(time.Now().UnixMilli() - mathRandom.Int63n(1_000_000)*1000)
 	for i := 1; i < n; i++ {
 		now = time.UnixMilli(now.UnixMilli() - mathRandom.Int63n(100_000)*1000)
-		names = append(names, &NameHistoryRecord{
-			Name:      randomString(3 + mathRandom.Intn(22)),
-			ChangedAt: now,
+		names = append(names, &nameHistoryRecordJSONMapping{
+			Name:        randomString(3 + mathRandom.Intn(22)),
+			ChangedToAt: Time(now),
 		})
 	}
-	names = append(names, &NameHistoryRecord{Name: randomString(3 + mathRandom.Intn(22))})
-	r.nameHistoryByUUID[id] = names
+	names = append(names, &nameHistoryRecordJSONMapping{Name: randomString(3 + mathRandom.Intn(22))})
 
 	return &mockUser{
 		ID:         id,
@@ -79,14 +80,15 @@ func (r *mockUserRepo) NewRandomUser() *mockUser {
 		Legacy:     mathRandom.Intn(2) == 0,
 		Demo:       mathRandom.Intn(2) == 0,
 		Properties: nil,
-	}
+	}, names
 }
 
-func (r *mockUserRepo) PickRandomUser() *mockUser {
-	return r.usersByUUID[r.idList[mathRandom.Intn(mockUserCount)]]
+func (r *mockUserRepo) PickRandomUser() (*mockUser, mockNameHistory) {
+	id := r.idList[mathRandom.Intn(mockUserCount)]
+	return r.usersByUUID[id], r.nameHistoryByUUID[id]
 }
 
-func (r *mockUserRepo) PickNameHistory(uuid uuid.UUID) ([]*NameHistoryRecord, bool) {
+func (r *mockUserRepo) PickNameHistory(uuid uuid.UUID) (mockNameHistory, bool) {
 	hist, err := r.nameHistoryByUUID[uuid]
 	return hist, err
 }
@@ -347,7 +349,7 @@ func TestClient_ProfileByUsername(t *testing.T) {
 	defer cancel()
 
 	for i := 0; i < 100; i++ {
-		u := users.PickRandomUser()
+		u, _ := users.PickRandomUser()
 		p, err := client.ProfileByUsername(ctx, u.Name, time.Time{})
 
 		isNotNil(t, p)
@@ -365,7 +367,7 @@ func TestClient_ProfileByUsername2(t *testing.T) {
 	defer cancel()
 
 	for i := 0; i < 100; i++ {
-		u := users.NewRandomUser()
+		u, _ := users.NewRandomUser()
 		p, err := client.ProfileByUsername(ctx, u.Name, time.Time{})
 
 		isZero(t, p)
@@ -453,7 +455,8 @@ func TestClient_ProfileByUsernameBulk(t *testing.T) {
 		n := int(mathRandom.Int31n(10))
 		names := make([]string, n)
 		for k := 0; k < n; k++ {
-			names[k] = users.PickRandomUser().Name
+			u, _ := users.PickRandomUser()
+			names[k] = u.Name
 		}
 
 		p, err := client.ProfileByUsernameBulk(ctx, names)
@@ -476,12 +479,14 @@ func TestClient_ProfileByUsernameBulk2(t *testing.T) {
 		names := make([]string, ne+nm)
 		exist := make([]string, ne)
 		for k := 0; k < ne; k++ {
-			name := users.PickRandomUser().Name
+			u, _ := users.PickRandomUser()
+			name := u.Name
 			names[k] = name
 			exist[k] = name
 		}
 		for k := ne; k < ne+nm; k++ {
-			names[k] = users.NewRandomUser().Name
+			u, _ := users.NewRandomUser()
+			names[k] = u.Name
 		}
 
 		p, err := client.ProfileByUsernameBulk(ctx, names)
@@ -501,7 +506,8 @@ func TestClient_ProfileByUsernameBulk3(t *testing.T) {
 	n := int(1 + mathRandom.Int31n(9))
 	names := make([]string, n)
 	for k := 0; k < n-1; k++ {
-		names[k] = users.PickRandomUser().Name
+		u, _ := users.PickRandomUser()
+		names[k] = u.Name
 	}
 	names[n-1] = strings.Repeat("0", 26)
 
