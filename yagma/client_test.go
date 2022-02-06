@@ -13,6 +13,7 @@ import (
 	mathRandom "math/rand"
 	"net/http"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -25,7 +26,11 @@ import (
 
 const mockUserCount = 10000
 
-type mockUser Profile
+type mockUser struct {
+	profile *Profile
+	names   []*NameHistoryRecord
+}
+
 type mockNameHistory nameHistoryRecordJSONMappingArray
 
 type mockUserRepo struct {
@@ -44,58 +49,91 @@ func newMockUserRepo() *mockUserRepo {
 	}
 
 	for i := 0; i < mockUserCount; i++ {
-		u, n := r.NewRandomUser()
-		r.idList[i] = u.ID
-		r.usersByUUID[u.ID] = u
-		r.usersByName[strings.ToLower(u.Name)] = u
-		r.nameHistoryByUUID[u.ID] = n
+		u := r.NewRandomUser()
+		r.idList[i] = u.profile.ID
+		r.usersByUUID[u.profile.ID] = u
+		r.usersByName[strings.ToLower(u.profile.Name)] = u
 	}
 
 	return r
 }
 
-func (r *mockUserRepo) NewRandomUser() (*mockUser, mockNameHistory) {
+func (r *mockUserRepo) NewRandomUser() *mockUser {
 	var id uuid.UUID
 
 	id, err := uuid.NewRandom()
 	if err != nil {
 		panic(err)
 	}
+	name := randomString(8 + mathRandom.Intn(16))
 
+	u := &mockUser{
+		profile: &Profile{
+			ID:     id,
+			Name:   name,
+			Legacy: mathRandom.Intn(2) == 0,
+			Demo:   mathRandom.Intn(2) == 0,
+		},
+	}
+
+	u.profile.Properties = newProperties(u)
+	u.names = newNameHistory()
+	return u
+}
+
+func newNameHistory() []*NameHistoryRecord {
 	n := 3 + mathRandom.Intn(5)
-	names := make(mockNameHistory, 0, 8)
+	names := make([]*NameHistoryRecord, 0, 8)
 	now := time.UnixMilli(time.Now().UnixMilli() - mathRandom.Int63n(1_000_000)*1000)
 	for i := 1; i < n; i++ {
 		now = time.UnixMilli(now.UnixMilli() - mathRandom.Int63n(100_000)*1000)
-		names = append(names, &nameHistoryRecordJSONMapping{
-			Name:        randomString(3 + mathRandom.Intn(22)),
-			ChangedToAt: Time(now),
+		names = append(names, &NameHistoryRecord{
+			Name:      randomString(3 + mathRandom.Intn(22)),
+			ChangedAt: now,
 		})
 	}
-	names = append(names, &nameHistoryRecordJSONMapping{Name: randomString(3 + mathRandom.Intn(22))})
-
-	return &mockUser{
-		ID:         id,
-		Name:       randomString(8 + mathRandom.Intn(16)),
-		Legacy:     mathRandom.Intn(2) == 0,
-		Demo:       mathRandom.Intn(2) == 0,
-		Properties: nil,
-	}, names
+	names = append(names, &NameHistoryRecord{Name: randomString(3 + mathRandom.Intn(22))})
+	return names
 }
 
-func (r *mockUserRepo) PickRandomUser() (*mockUser, mockNameHistory) {
+func newProperties(u *mockUser) []*ProfileProperty {
+	m := &profileTexturesJSONMapping{
+		ProfileID:   u.profile.ID,
+		ProfileName: u.profile.Name,
+		Timestamp:   time.Now().UnixMilli(),
+	}
+
+	if mathRandom.Intn(2) == 0 {
+		m.Textures.Skin.URL = "https://textures.minecraft.net/texture/" + randomString(64)
+		if mathRandom.Intn(2) == 0 {
+			m.Textures.Skin.Metadata.Model = "slim"
+		}
+	}
+	if mathRandom.Intn(2) == 0 {
+		m.Textures.Cape.URL = "https://textures.minecraft.net/texture/" + randomString(64)
+	}
+
+	pp, err := m.Wrap().ProfileProperty()
+	if err != nil {
+		panic(err)
+	}
+
+	return []*ProfileProperty{pp}
+}
+
+func (r *mockUserRepo) RandomUser() *mockUser {
 	id := r.idList[mathRandom.Intn(mockUserCount)]
-	return r.usersByUUID[id], r.nameHistoryByUUID[id]
+	return r.usersByUUID[id]
 }
 
-func (r *mockUserRepo) PickNameHistory(uuid uuid.UUID) (mockNameHistory, bool) {
-	hist, err := r.nameHistoryByUUID[uuid]
-	return hist, err
+func (r *mockUserRepo) ByName(name string) (*mockUser, bool) {
+	u, exists := r.usersByName[strings.ToLower(name)]
+	return u, exists
 }
 
-func (r *mockUserRepo) FindByName(name string) (*mockUser, bool) {
-	u, e := r.usersByName[strings.ToLower(name)]
-	return u, e
+func (r *mockUserRepo) ByUUID(id uuid.UUID) (*mockUser, bool) {
+	u, exists := r.usersByUUID[id]
+	return u, exists
 }
 
 // Utility method definition
@@ -118,6 +156,14 @@ func randomString(length int) string {
 	}
 
 	return hex.EncodeToString(buf)
+}
+
+func (t *Time) MarshalJSON() ([]byte, error) {
+	return []byte(strconv.FormatInt(time.Time(*t).UnixMilli(), 10)), nil
+}
+
+func (u *UUID) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + strings.ReplaceAll(uuid.UUID(*u).String(), "-", "") + `"`), nil
 }
 
 func (t *ProfileTextures) Unwrap() *profileTexturesJSONMapping {
@@ -333,19 +379,19 @@ func registerProfileByUsernameResponder() {
 			case len(name) > 25:
 				return newBadRequestExceptionResponse(name), nil
 			default:
-				user, found := users.FindByName(name)
+				user, found := users.ByName(name)
 				if !found {
 					return newNoContentResponse(), nil
 				}
 
 				data := j{
-					"id":   strings.ReplaceAll(user.ID.String(), "-", ""),
-					"name": user.Name,
+					"id":   strings.ReplaceAll(user.profile.ID.String(), "-", ""),
+					"name": user.profile.Name,
 				}
-				if user.Legacy {
+				if user.profile.Legacy {
 					data["legacy"] = true
 				}
-				if user.Demo {
+				if user.profile.Demo {
 					data["demo"] = true
 				}
 
@@ -360,15 +406,15 @@ func TestClient_ProfileByUsername(t *testing.T) {
 	defer cancel()
 
 	for i := 0; i < iterations; i++ {
-		u, _ := users.PickRandomUser()
-		p, err := client.ProfileByUsername(ctx, u.Name, time.Time{})
+		u := users.RandomUser()
+		p, err := client.ProfileByUsername(ctx, u.profile.Name, time.Time{})
 
 		isNotNil(t, p)
 		if errEqNil(t, err) {
-			eq(t, u.ID, p.ID)
-			eq(t, u.Name, p.Name)
-			eq(t, u.Legacy, p.Legacy)
-			eq(t, u.Demo, p.Demo)
+			eq(t, u.profile.ID, p.ID)
+			eq(t, u.profile.Name, p.Name)
+			eq(t, u.profile.Legacy, p.Legacy)
+			eq(t, u.profile.Demo, p.Demo)
 		}
 	}
 }
@@ -378,8 +424,8 @@ func TestClient_ProfileByUsername2(t *testing.T) {
 	defer cancel()
 
 	for i := 0; i < iterations; i++ {
-		u, _ := users.NewRandomUser()
-		p, err := client.ProfileByUsername(ctx, u.Name, time.Time{})
+		u := users.NewRandomUser()
+		p, err := client.ProfileByUsername(ctx, u.profile.Name, time.Time{})
 
 		isZero(t, p)
 		if errNeqNil(t, err) {
@@ -433,19 +479,19 @@ func registerProfileByUsernameBulkResponder() {
 				case len(name) == 0, len(name) > 25:
 					return newBadRequestExceptionResponse(name), nil
 				default:
-					user, found := users.FindByName(name)
+					user, found := users.ByName(name)
 					if !found {
 						continue
 					}
 
 					data := j{
-						"id":   strings.ReplaceAll(user.ID.String(), "-", ""),
-						"name": user.Name,
+						"id":   strings.ReplaceAll(user.profile.ID.String(), "-", ""),
+						"name": user.profile.Name,
 					}
-					if user.Legacy {
+					if user.profile.Legacy {
 						data["legacy"] = true
 					}
-					if user.Demo {
+					if user.profile.Demo {
 						data["demo"] = true
 					}
 
@@ -466,8 +512,8 @@ func TestClient_ProfileByUsernameBulk(t *testing.T) {
 		n := int(mathRandom.Int31n(10))
 		names := make([]string, n)
 		for k := 0; k < n; k++ {
-			u, _ := users.PickRandomUser()
-			names[k] = u.Name
+			u := users.RandomUser()
+			names[k] = u.profile.Name
 		}
 
 		p, err := client.ProfileByUsernameBulk(ctx, names)
@@ -490,14 +536,14 @@ func TestClient_ProfileByUsernameBulk2(t *testing.T) {
 		names := make([]string, ne+nm)
 		exist := make([]string, ne)
 		for k := 0; k < ne; k++ {
-			u, _ := users.PickRandomUser()
-			name := u.Name
+			u := users.RandomUser()
+			name := u.profile.Name
 			names[k] = name
 			exist[k] = name
 		}
 		for k := ne; k < ne+nm; k++ {
-			u, _ := users.NewRandomUser()
-			names[k] = u.Name
+			u := users.NewRandomUser()
+			names[k] = u.profile.Name
 		}
 
 		p, err := client.ProfileByUsernameBulk(ctx, names)
@@ -517,8 +563,8 @@ func TestClient_ProfileByUsernameBulk3(t *testing.T) {
 	n := int(1 + mathRandom.Int31n(9))
 	names := make([]string, n)
 	for k := 0; k < n-1; k++ {
-		u, _ := users.PickRandomUser()
-		names[k] = u.Name
+		u := users.RandomUser()
+		names[k] = u.profile.Name
 	}
 	names[n-1] = strings.Repeat("0", 26)
 
@@ -536,12 +582,12 @@ func registerNameHistoryByUUIDResponder() {
 			uuidStr := httpmock.MustGetSubmatch(r, 1)
 			id := uuid.MustParse(uuidStr)
 
-			hist, exists := users.PickNameHistory(id)
+			user, exists := users.ByUUID(id)
 			if !exists {
 				return newNoContentResponse(), nil
 			}
 
-			return newJSONResponse(http.StatusOK, hist), nil
+			return newJSONResponse(http.StatusOK, user.names), nil
 		},
 	)
 }
@@ -551,8 +597,8 @@ func TestClient_NameHistoryByUUID(t *testing.T) {
 	defer cancel()
 
 	for i := 0; i < iterations; i++ {
-		u, _ := users.PickRandomUser()
-		hist, err := client.NameHistoryByUUID(ctx, u.ID)
+		u := users.RandomUser()
+		hist, err := client.NameHistoryByUUID(ctx, u.profile.ID)
 		errEqNil(t, err)
 		isNotZero(t, hist)
 	}
@@ -563,8 +609,8 @@ func TestClient_NameHistoryByUUID2(t *testing.T) {
 	defer cancel()
 
 	for i := 0; i < iterations; i++ {
-		u, _ := users.NewRandomUser()
-		hist, err := client.NameHistoryByUUID(ctx, u.ID)
+		u := users.NewRandomUser()
+		hist, err := client.NameHistoryByUUID(ctx, u.profile.ID)
 		errNeqNil(t, err)
 		isZero(t, hist)
 	}

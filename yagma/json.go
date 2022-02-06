@@ -144,10 +144,6 @@ func (m *profileTexturesJSONMapping) Wrap() *ProfileTextures {
 // Time is a wrapper around time.Time implementation that provides JSON unmarshalling logic.
 type Time time.Time
 
-func (t *Time) MarshalJSON() ([]byte, error) {
-	return []byte(strconv.FormatInt(time.Time(*t).UnixMilli(), 10)), nil
-}
-
 func (t *Time) UnmarshalJSON(p []byte) error {
 	millis, err := strconv.ParseInt(string(p), 10, 64)
 	if err != nil {
