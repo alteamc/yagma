@@ -140,7 +140,7 @@ func (c *Client) NameHistoryByUUID(ctx context.Context, uuid uuid.UUID) ([]*Name
 	switch res.StatusCode {
 	case http.StatusOK:
 		records := make(nameHistoryRecordJSONMappingArray, 0, 8)
-		if err = parseRes(res, records); err != nil {
+		if err = parseRes(res, &records); err != nil {
 			return nil, err
 		}
 		return records.Wrap(), nil
