@@ -23,7 +23,7 @@ import (
 
 // Mock user data repository
 
-const mockUserCount = 2000
+const mockUserCount = 10000
 
 type mockUser Profile
 type mockNameHistory nameHistoryRecordJSONMappingArray
@@ -304,6 +304,7 @@ func logfAndFailNow(t *testing.T, format string, v ...interface{}) {
 // Test environment
 
 const ctxTimeout = 10 * time.Second
+const iterations = 10000
 
 var client = New()
 var users = newMockUserRepo()
@@ -358,7 +359,7 @@ func TestClient_ProfileByUsername(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()
 
-	for i := 0; i < 100; i++ {
+	for i := 0; i < iterations; i++ {
 		u, _ := users.PickRandomUser()
 		p, err := client.ProfileByUsername(ctx, u.Name, time.Time{})
 
@@ -376,7 +377,7 @@ func TestClient_ProfileByUsername2(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()
 
-	for i := 0; i < 100; i++ {
+	for i := 0; i < iterations; i++ {
 		u, _ := users.NewRandomUser()
 		p, err := client.ProfileByUsername(ctx, u.Name, time.Time{})
 
@@ -461,7 +462,7 @@ func TestClient_ProfileByUsernameBulk(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()
 
-	for i := 0; i < 100; i++ {
+	for i := 0; i < iterations; i++ {
 		n := int(mathRandom.Int31n(10))
 		names := make([]string, n)
 		for k := 0; k < n; k++ {
@@ -483,7 +484,7 @@ func TestClient_ProfileByUsernameBulk2(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()
 
-	for i := 0; i < 100; i++ {
+	for i := 0; i < iterations; i++ {
 		ne := int(mathRandom.Int31n(5 + 1))
 		nm := 10 - ne
 		names := make([]string, ne+nm)
@@ -549,7 +550,7 @@ func TestClient_NameHistoryByUUID(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()
 
-	for i := 0; i < 100; i++ {
+	for i := 0; i < iterations; i++ {
 		u, _ := users.PickRandomUser()
 		hist, err := client.NameHistoryByUUID(ctx, u.ID)
 		errEqNil(t, err)
@@ -561,7 +562,7 @@ func TestClient_NameHistoryByUUID2(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()
 
-	for i := 0; i < 100; i++ {
+	for i := 0; i < iterations; i++ {
 		u, _ := users.NewRandomUser()
 		hist, err := client.NameHistoryByUUID(ctx, u.ID)
 		errNeqNil(t, err)
