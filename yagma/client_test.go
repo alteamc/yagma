@@ -314,6 +314,7 @@ func TestMain(m *testing.M) {
 
 	registerProfileByUsernameResponder()
 	registerProfileByUsernameBulkResponder()
+	registerNameHistoryByUUIDResponder()
 
 	m.Run()
 }
@@ -524,5 +525,46 @@ func TestClient_ProfileByUsernameBulk3(t *testing.T) {
 	isZero(t, p)
 	if errNeqNil(t, err) {
 		as(t, err, reflect.TypeOf(&RequestError{}))
+	}
+}
+
+func registerNameHistoryByUUIDResponder() {
+	httpmock.RegisterResponder(
+		http.MethodGet, `=~^https://api\.mojang\.com/user/profiles/(.*)/names`,
+		func(r *http.Request) (*http.Response, error) {
+			uuidStr := httpmock.MustGetSubmatch(r, 1)
+			id := uuid.MustParse(uuidStr)
+
+			hist, exists := users.PickNameHistory(id)
+			if !exists {
+				return newNoContentResponse(), nil
+			}
+
+			return newJSONResponse(http.StatusOK, hist), nil
+		},
+	)
+}
+
+func TestClient_NameHistoryByUUID(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
+	defer cancel()
+
+	for i := 0; i < 100; i++ {
+		u, _ := users.PickRandomUser()
+		hist, err := client.NameHistoryByUUID(ctx, u.ID)
+		errEqNil(t, err)
+		isNotZero(t, hist)
+	}
+}
+
+func TestClient_NameHistoryByUUID2(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
+	defer cancel()
+
+	for i := 0; i < 100; i++ {
+		u, _ := users.NewRandomUser()
+		hist, err := client.NameHistoryByUUID(ctx, u.ID)
+		errNeqNil(t, err)
+		isZero(t, hist)
 	}
 }
