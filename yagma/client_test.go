@@ -256,7 +256,7 @@ func newNoContentResponse() *http.Response {
 
 // Assertions
 
-func as(t *testing.T, v interface{}, dt reflect.Type) bool {
+func instanceOf(t *testing.T, v interface{}, dt reflect.Type) bool {
 	if !reflect.TypeOf(v).AssignableTo(dt) {
 		logfAndFailNow(t, "expected %v to be of type %v, but got type %v", v, dt, reflect.TypeOf(v))
 		return false
@@ -329,7 +329,7 @@ func isNotNil(t *testing.T, v interface{}) bool {
 	return true
 }
 
-func saContains(t *testing.T, arr []string, v string) bool {
+func stringArrayContains(t *testing.T, arr []string, v string) bool {
 	for _, it := range arr {
 		if it == v {
 			return true
@@ -372,6 +372,8 @@ func TestMain(m *testing.M) {
 
 // Tests
 
+// Profile by username
+
 func registerProfileByUsernameResponder() {
 	httpmock.RegisterResponder(
 		http.MethodGet, `=~^https://api\.mojang\.com/users/profiles/minecraft/(?:(.*)(?:at=(.*))?)?`,
@@ -405,6 +407,7 @@ func registerProfileByUsernameResponder() {
 	)
 }
 
+// TestClient_ProfileByUsername tests profile by username endpoint with random existing users.
 func TestClient_ProfileByUsername(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()
@@ -423,6 +426,7 @@ func TestClient_ProfileByUsername(t *testing.T) {
 	}
 }
 
+// TestClient_ProfileByUsername2 tests profile by username endpoint with random nonexistent users.
 func TestClient_ProfileByUsername2(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()
@@ -438,6 +442,7 @@ func TestClient_ProfileByUsername2(t *testing.T) {
 	}
 }
 
+// TestClient_ProfileByUsername3 tests profile by username endpoint with empty username.
 func TestClient_ProfileByUsername3(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()
@@ -446,10 +451,11 @@ func TestClient_ProfileByUsername3(t *testing.T) {
 
 	isZero(t, p)
 	if errNeqNil(t, err) {
-		as(t, err, reflect.TypeOf(&RequestError{}))
+		instanceOf(t, err, reflect.TypeOf(&RequestError{}))
 	}
 }
 
+// TestClient_ProfileByUsername4 tests profile by username endpoint with invalid long username.
 func TestClient_ProfileByUsername4(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()
@@ -459,9 +465,11 @@ func TestClient_ProfileByUsername4(t *testing.T) {
 
 	isZero(t, p)
 	if errNeqNil(t, err) {
-		as(t, err, reflect.TypeOf(&RequestError{}))
+		instanceOf(t, err, reflect.TypeOf(&RequestError{}))
 	}
 }
+
+// Bulk profile by username
 
 func registerProfileByUsernameBulkResponder() {
 	httpmock.RegisterResponder(
@@ -508,6 +516,7 @@ func registerProfileByUsernameBulkResponder() {
 	)
 }
 
+// TestClient_ProfileByUsernameBulk tests bulk profile by username endpoint with existing usernames.
 func TestClient_ProfileByUsernameBulk(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()
@@ -524,12 +533,13 @@ func TestClient_ProfileByUsernameBulk(t *testing.T) {
 		if errEqNil(t, err) {
 			eq(t, n, len(p))
 			for _, it := range p {
-				saContains(t, names, it.Name)
+				stringArrayContains(t, names, it.Name)
 			}
 		}
 	}
 }
 
+// TestClient_ProfileByUsernameBulk2 tests bulk profile by username endpoint with both existing and nonexistent random usernames.
 func TestClient_ProfileByUsernameBulk2(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()
@@ -554,12 +564,13 @@ func TestClient_ProfileByUsernameBulk2(t *testing.T) {
 		if errEqNil(t, err) {
 			eq(t, ne, len(p))
 			for _, it := range p {
-				saContains(t, exist, it.Name)
+				stringArrayContains(t, exist, it.Name)
 			}
 		}
 	}
 }
 
+// TestClient_ProfileByUsernameBulk3 tests bulk profile by username endpoint with random nonexistent usernames.
 func TestClient_ProfileByUsernameBulk3(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()
@@ -575,9 +586,11 @@ func TestClient_ProfileByUsernameBulk3(t *testing.T) {
 	p, err := client.ProfileByUsernameBulk(ctx, names)
 	isZero(t, p)
 	if errNeqNil(t, err) {
-		as(t, err, reflect.TypeOf(&RequestError{}))
+		instanceOf(t, err, reflect.TypeOf(&RequestError{}))
 	}
 }
+
+// Name history by UUID
 
 func registerNameHistoryByUUIDResponder() {
 	httpmock.RegisterResponder(
@@ -596,6 +609,7 @@ func registerNameHistoryByUUIDResponder() {
 	)
 }
 
+// TestClient_NameHistoryByUUID tests name history by UUID endpoint with random existing UUIDs.
 func TestClient_NameHistoryByUUID(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()
@@ -608,6 +622,7 @@ func TestClient_NameHistoryByUUID(t *testing.T) {
 	}
 }
 
+// TestClient_NameHistoryByUUID2 tests name history by UUID endpoint with random nonexistent UUIDs.
 func TestClient_NameHistoryByUUID2(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()
