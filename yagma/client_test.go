@@ -349,11 +349,15 @@ func logfAndFailNow(t *testing.T, format string, v ...interface{}) {
 
 // Test environment
 
-const ctxTimeout = 10 * time.Second
-const iterations = 10000
+const (
+	ctxTimeout = 10 * time.Second
+	iterations = 10000
+)
 
-var client = New()
-var users = newMockUserRepo()
+var (
+	client = New()
+	users  = newMockUserRepo()
+)
 
 func TestMain(m *testing.M) {
 	httpmock.Activate()
